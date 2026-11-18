@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Fixawyy.Context;
 using Fixawyy.DTOs;
+using Fixawyy.Models;
 using Fixawyy.Services;
 
 namespace Fixawyy.Controllers;
 
+[Authorize(Roles = AppRoles.OperationsAuthorizedRoles)]
 [ApiController]
 [Route("api/assignment")]
 public class AssignmentApiController : ControllerBase

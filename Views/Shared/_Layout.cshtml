@@ -54,15 +54,15 @@
                                 <i class="bi bi-tools me-1 text-warning"></i>Find Technicians
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link nav-link-modern" asp-controller="Dispatcher" asp-action="Index">
-                                <i class="bi bi-cpu-fill me-1 text-info"></i>Operations Dispatcher
-                            </a>
-                        </li>
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Employee") || User.IsInRole("FacilityEmployee"))
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link nav-link-modern" asp-controller="Dispatcher" asp-action="Index">
+                                        <i class="bi bi-cpu-fill me-1 text-info"></i>Operations Dispatcher
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link nav-link-modern" asp-controller="Admin" asp-action="Users">
                                         <i class="bi bi-people-fill me-1 text-warning"></i>User Management
@@ -86,28 +86,31 @@
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">
-                        <!-- Operations Quick Pill -->
-                        <a asp-controller="Dispatcher" asp-action="Index" class="btn btn-sm btn-outline-warning d-none d-md-flex align-items-center gap-1 rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
-                            <i class="bi bi-lightning-charge-fill"></i> Dispatch Board
-                        </a>
+                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Employee") || User.IsInRole("FacilityEmployee")))
+                        {
+                            <!-- Operations Quick Pill (Only for Facility Employees / Admins) -->
+                            <a asp-controller="Dispatcher" asp-action="Index" class="btn btn-sm btn-outline-warning d-none d-md-flex align-items-center gap-1 rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
+                                <i class="bi bi-lightning-charge-fill"></i> Dispatch Board
+                            </a>
 
-                        <!-- Notification Bell Dropdown -->
-                        <div class="dropdown me-1">
-                            <button class="btn btn-link text-white p-1 position-relative dropdown-toggle shadow-none" type="button" id="navNotificationBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
-                                <i class="bi bi-bell-fill fs-5"></i>
-                                <span id="navNotificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display: none;">
-                                    <span class="visually-hidden">New alerts</span>
-                                </span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 py-2 border-0" aria-labelledby="navNotificationBell" style="width: 320px; max-height: 400px; overflow-y: auto;" id="navNotificationList">
-                                <li class="dropdown-header fw-bold text-uppercase small text-muted d-flex justify-content-between align-items-center">
-                                    <span>Live Notifications</span>
-                                    <span class="badge bg-primary-subtle text-primary small">SignalR</span>
-                                </li>
-                                <li><hr class="dropdown-divider my-1"></li>
-                                <li class="px-3 py-2 text-center text-muted small" id="navNotificationEmpty">No new notifications</li>
-                            </ul>
-                        </div>
+                            <!-- Notification Bell Dropdown (Only for Facility Employees / Admins) -->
+                            <div class="dropdown me-1">
+                                <button class="btn btn-link text-white p-1 position-relative dropdown-toggle shadow-none" type="button" id="navNotificationBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
+                                    <i class="bi bi-bell-fill fs-5"></i>
+                                    <span id="navNotificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display: none;">
+                                        <span class="visually-hidden">New alerts</span>
+                                    </span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 py-2 border-0" aria-labelledby="navNotificationBell" style="width: 320px; max-height: 400px; overflow-y: auto;" id="navNotificationList">
+                                    <li class="dropdown-header fw-bold text-uppercase small text-muted d-flex justify-content-between align-items-center">
+                                        <span>Live Notifications</span>
+                                        <span class="badge bg-primary-subtle text-primary small">SignalR</span>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li class="px-3 py-2 text-center text-muted small" id="navNotificationEmpty">No new notifications</li>
+                                </ul>
+                            </div>
+                        }
 
                         <!-- Dark / Light Mode Toggle Button -->
                         <button id="themeToggleBtn" type="button" class="theme-toggle-btn me-1" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
@@ -223,15 +226,17 @@
                 });
             }
 
-            // Load quick notifications for bell dropdown
+            // Load quick notifications for bell dropdown only if element exists (user is authorized)
             async function loadNavNotifications() {
+                const list = document.getElementById('navNotificationList');
+                if (!list) return; // Not an authorized facility employee/admin
+
                 try {
                     const res = await fetch('/api/assignment/notifications?limit=5');
                     if (!res.ok) return;
                     const items = await res.json();
-                    const list = document.getElementById('navNotificationList');
                     const badge = document.getElementById('navNotificationBadge');
-                    if (!list || !items.length) return;
+                    if (!items.length) return;
 
                     if (badge) badge.style.display = 'block';
 

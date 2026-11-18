@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Fixawyy.DTOs;
+using Fixawyy.Models;
 using Fixawyy.Services;
 
 namespace Fixawyy.Controllers;
 
+[Authorize(Roles = AppRoles.OperationsAuthorizedRoles)]
 [ApiController]
 [Route("api/analytics")]
 public class AnalyticsApiController : ControllerBase

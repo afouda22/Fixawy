@@ -44,6 +44,28 @@ public static class DbInitializer
             }
         }
 
+        // 2.1 Default Facility Operations Employee
+        var facilityEmail = "facility@fixawyy.com";
+        var existingFacility = await userManager.FindByEmailAsync(facilityEmail);
+        if (existingFacility == null)
+        {
+            var facilityUser = new ApplicationUser
+            {
+                UserName = facilityEmail,
+                Email = facilityEmail,
+                FullName = "Facility Operations Supervisor",
+                EmailConfirmed = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await userManager.CreateAsync(facilityUser, "Facility@123456");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(facilityUser, AppRoles.FacilityEmployee);
+            }
+        }
+
         // 3. Specialties
         if (!await context.Specialties.AnyAsync())
         {
