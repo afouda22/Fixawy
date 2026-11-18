@@ -1,9 +1,12 @@
 # .NET Core & Visual Studio
 **/bin/
 **/obj/
+**/publish/
+*.publishSettings
 *.user
 *.suo
 .vs/
+*.pubxml
 *.lock.json
 *.nuget.props
 *.nuget.targets
