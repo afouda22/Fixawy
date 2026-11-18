@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Fixawyy.Controllers;
 
-[Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Manager}")]
+[Authorize(Roles = AppRoles.Admin)]
 public class AdminController : Controller
 {
     private readonly IUserService _userService;

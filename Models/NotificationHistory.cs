@@ -5,7 +5,7 @@ public class NotificationHistory
     public int Id { get; set; }
 
     public string? RecipientUserId { get; set; }
-    public string TargetRole { get; set; } = "Manager"; // Manager, Technician, All
+    public string TargetRole { get; set; } = "FacilityAdmin"; // FacilityAdmin, Technician, All
 
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;

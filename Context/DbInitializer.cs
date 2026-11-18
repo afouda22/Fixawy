@@ -22,6 +22,16 @@ public static class DbInitializer
             }
         }
 
+        // Clean up deprecated Manager role if exists
+        if (await roleManager.RoleExistsAsync("Manager"))
+        {
+            var managerRole = await roleManager.FindByNameAsync("Manager");
+            if (managerRole != null)
+            {
+                await roleManager.DeleteAsync(managerRole);
+            }
+        }
+
         // 2. Default System Admin
         var adminEmail = "admin@fixawyy.com";
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);

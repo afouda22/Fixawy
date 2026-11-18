@@ -23,7 +23,7 @@ public class NotificationHub : Hub
         });
     }
 
-    // إرسال إشعار مخصص لدور معين (مثل Manager أو Technician)
+    // إرسال إشعار مخصص لدور معين (مثل FacilityAdmin أو Technician)
     public async Task SendNotificationToRole(string role, string title, string message, string eventType)
     {
         await Clients.Group(role).SendAsync("NewNotification", new
