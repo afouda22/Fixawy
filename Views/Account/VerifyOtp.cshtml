@@ -1,0 +1,60 @@
+@model Fixawyy.Model_Views.VerifyOtpViewModel
+@{
+    ViewData["Title"] = "Email Verification";
+}
+
+<div class="row justify-content-center py-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card card-modern border-0 shadow-lg overflow-hidden">
+            <div class="card-auth-header"></div>
+            <div class="p-4 p-sm-5">
+                <div class="text-center mb-4">
+                    <div class="d-inline-block rounded-circle p-1 mb-3" style="border: 2.5px solid #f5a623; box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);">
+                        <img src="~/images/logo.jpg" alt="Fixawyy Logo" class="rounded-circle" style="width: 80px; height: 80px; object-fit: contain;" />
+                    </div>
+                    <h3 class="fw-bold mb-1">Verify Your Email</h3>
+                    <p class="text-muted small">
+                        We sent a 6-digit verification code to<br />
+                        <strong class="text-primary">@Model.Email</strong>
+                    </p>
+                </div>
+
+                @if (TempData["OtpSentMessage"] != null)
+                {
+                    <div class="alert alert-success border-success-subtle rounded-3 p-3 mb-4 text-center small">
+                        <i class="bi bi-envelope-check me-1"></i>@TempData["OtpSentMessage"]
+                    </div>
+                }
+
+                <form asp-action="VerifyOtp" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Email" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <div class="mb-4 text-center">
+                        <label asp-for="OtpCode" class="form-label small fw-semibold mb-2">Enter 6-Digit Code</label>
+                        <input asp-for="OtpCode" maxlength="6" autofocus
+                               class="form-control form-control-modern text-center fs-3 fw-bold tracking-widest font-monospace py-2"
+                               placeholder="000000" style="letter-spacing: 0.5rem;" />
+                        <span asp-validation-for="OtpCode" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-yellow-modern w-100 py-2.5 fs-6">
+                        <i class="bi bi-check2-circle me-1"></i>Verify &amp; Activate Account
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <form asp-action="ResendOtp" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="email" value="@Model.Email" />
+                        <span class="text-muted small">Didn't receive code? </span>
+                        <button type="submit" class="btn btn-link p-0 text-primary small fw-bold text-decoration-none">
+                            <i class="bi bi-arrow-repeat me-1"></i>Resend Code
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

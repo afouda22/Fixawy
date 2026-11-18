@@ -1,0 +1,106 @@
+@model Fixawyy.Model_Views.TechnicianProfileViewModel
+@{
+    ViewData["Title"] = "Technician Profile";
+}
+
+<div class="py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-4 mb-4 border-bottom gap-3">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 mb-1">
+                <span class="brand-pill">
+                    <i class="bi bi-tools text-warning"></i>
+                    <span>Technician Portal</span>
+                </span>
+            </div>
+            <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-person-badge-fill text-primary"></i>
+                <span>Technician Profile &amp; Skills</span>
+            </h2>
+            <p class="text-muted small mb-0">Configure your professional bio, service rates, and maintenance specialties.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Schedule" class="btn btn-outline-modern btn-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-calendar3 text-primary"></i>
+                <span>Edit Working Hours</span>
+            </a>
+        </div>
+    </div>
+
+    <form asp-action="Profile" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row g-4">
+            <!-- Left Column: Details -->
+            <div class="col-lg-7">
+                <div class="card card-modern card-accent-blue p-4 mb-4">
+                    <h5 class="fw-bold mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle-fill text-primary"></i>
+                        <span>Professional Information</span>
+                    </h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="HourlyRate" class="form-label small fw-semibold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text fw-bold">EGP</span>
+                                <input asp-for="HourlyRate" type="number" step="10" min="0" max="10000" class="form-control form-control-modern" />
+                            </div>
+                            <span asp-validation-for="HourlyRate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="YearsOfExperience" class="form-label small fw-semibold"></label>
+                            <input asp-for="YearsOfExperience" type="number" min="0" max="50" class="form-control form-control-modern" />
+                            <span asp-validation-for="YearsOfExperience" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Bio" class="form-label small fw-semibold"></label>
+                        <textarea asp-for="Bio" rows="4" class="form-control form-control-modern" placeholder="Highlight your expertise, certifications, and service experience..."></textarea>
+                        <span asp-validation-for="Bio" class="text-danger small"></span>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center" style="border-left: 4px solid #f5a623 !important;">
+                        <div>
+                            <div class="fw-bold small">Availability for New Jobs</div>
+                            <small class="text-muted">Turn off when you are on vacation or fully booked</small>
+                        </div>
+                        <div class="form-check form-switch fs-5">
+                            <input asp-for="IsAvailable" class="form-check-input" type="checkbox" role="switch" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Specialties -->
+            <div class="col-lg-5">
+                <div class="card card-modern card-accent-yellow p-4 mb-4">
+                    <h5 class="fw-bold mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="bi bi-tools text-warning"></i>
+                        <span>Select Specialties</span>
+                    </h5>
+                    <p class="text-muted small mb-3">Check all categories you are qualified to perform:</p>
+
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var spec in Model.AllSpecialties)
+                        {
+                            var isChecked = Model.SelectedSpecialtyIds.Contains(spec.Id);
+                            <label class="p-3 rounded-3 border d-flex align-items-start gap-3 @(isChecked ? "border-primary bg-primary-subtle" : "")" style="cursor: pointer;">
+                                <input type="checkbox" name="SelectedSpecialtyIds" value="@spec.Id" checked="@isChecked" class="form-check-input mt-1" />
+                                <div>
+                                    <div class="fw-bold small">@spec.Name</div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">@spec.Description</div>
+                                </div>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-yellow-modern w-100 py-2.5 fs-6">
+                    <i class="bi bi-check2-circle me-1"></i>Save Profile
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

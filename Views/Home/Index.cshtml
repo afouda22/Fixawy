@@ -1,0 +1,155 @@
+﻿@{
+    ViewData["Title"] = "Smart Maintenance Platform";
+}
+
+<div class="py-4">
+    <!-- Hero Section -->
+    <div class="text-center py-4 py-md-5 position-relative">
+        <!-- Mascot Showcase with floating badges -->
+        <div class="mb-4 d-inline-block position-relative">
+            <div class="mascot-hero-card">
+                <img src="~/images/logo.jpg" alt="Fixawyy Mascot" class="rounded-4" style="width: 140px; height: 140px; object-fit: contain;" />
+            </div>
+
+            <!-- Floating Trust Badges (Logo Colors) -->
+            <div class="floating-badge floating-badge-left d-none d-sm-flex">
+                <i class="bi bi-star-fill text-warning"></i>
+                <span>4.9 / 5.0 Rating</span>
+            </div>
+            <div class="floating-badge floating-badge-right d-none d-sm-flex">
+                <i class="bi bi-patch-check-fill text-primary"></i>
+                <span>Verified Specialists</span>
+            </div>
+        </div>
+
+        <!-- Brand Pill -->
+        <div class="mb-3">
+            <span class="brand-pill">
+                <i class="bi bi-wrench-adjustable-circle-fill"></i>
+                <span>Fixawyy • Smart Maintenance &amp; Booking Platform</span>
+            </span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="display-4 fw-extrabold mb-3" style="letter-spacing: -1.5px; font-weight: 800; line-height: 1.18;">
+            Find Trusted Technicians For<br />
+            <span class="text-primary">Every Maintenance Job</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="lead text-muted mb-4 mx-auto" style="max-width: 640px; line-height: 1.7; font-size: 1.1rem;">
+            Centralized technician directory with verified credentials, transparent hourly rates, and live weekly availability schedules across Egypt.
+        </p>
+
+        <!-- Quick Interactive Search Card -->
+        <div class="card card-modern p-2 p-md-3 mb-4 mx-auto shadow-sm" style="max-width: 680px;">
+            <form method="get" asp-controller="Technician" asp-action="Directory" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text border-0 ps-2"><i class="bi bi-search text-primary"></i></span>
+                        <input type="text" name="search" class="form-control form-control-modern border-0 shadow-none" placeholder="What needs fixing? (e.g. AC, plumbing...)" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="specialtyId" class="form-select border-0 rounded-3">
+                        <option value="">All Specialties</option>
+                        <option value="1">Plumbing (سباكة)</option>
+                        <option value="2">Electrical (كهرباء)</option>
+                        <option value="3">HVAC / Air Conditioning (تكييف)</option>
+                        <option value="4">Carpentry (نجارة)</option>
+                        <option value="5">Painting (دهانات)</option>
+                        <option value="6">Appliance Repair (أجهزة منزلية)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-yellow-modern w-100 py-2">
+                        <i class="bi bi-search me-1"></i>Find Tech
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Popular Category Quick Chips -->
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 mb-5">
+            <span class="text-muted small fw-semibold me-1">Popular:</span>
+            <a asp-controller="Technician" asp-action="Directory" asp-route-specialtyId="2" class="category-chip">
+                <i class="bi bi-lightning-charge-fill text-warning"></i> Electrical
+            </a>
+            <a asp-controller="Technician" asp-action="Directory" asp-route-specialtyId="1" class="category-chip">
+                <i class="bi bi-tools text-primary"></i> Plumbing
+            </a>
+            <a asp-controller="Technician" asp-action="Directory" asp-route-specialtyId="3" class="category-chip">
+                <i class="bi bi-snow text-primary"></i> HVAC &amp; AC
+            </a>
+            <a asp-controller="Technician" asp-action="Directory" asp-route-specialtyId="4" class="category-chip">
+                <i class="bi bi-hammer text-warning"></i> Carpentry
+            </a>
+            <a asp-controller="Technician" asp-action="Directory" asp-route-specialtyId="6" class="category-chip">
+                <i class="bi bi-cpu text-warning"></i> Appliances
+            </a>
+        </div>
+    </div>
+
+    <!-- 3 Pillars Cards (In Logo Triad: Blue, Yellow, Midnight Black) -->
+    <div class="row g-4 mb-5">
+        <!-- Pillar 1: Blue -->
+        <div class="col-md-4">
+            <div class="card card-modern card-accent-blue h-100 p-4 text-start">
+                <div class="rounded-3 bg-primary-subtle text-primary p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 54px; height: 54px;">
+                    <i class="bi bi-patch-check-fill fs-3"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Verified Profiles</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.6;">
+                    Every technician is verified with a 14-digit National ID and contact details. Ratings start honestly from 0.0 and grow through verified completed jobs.
+                </p>
+            </div>
+        </div>
+
+        <!-- Pillar 2: Yellow -->
+        <div class="col-md-4">
+            <div class="card card-modern card-accent-yellow h-100 p-4 text-start">
+                <div class="rounded-3 bg-warning-subtle text-warning p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 54px; height: 54px;">
+                    <i class="bi bi-calendar-week-fill fs-3"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Weekly Availability</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.6;">
+                    Technicians manage their active shifts, working days, and hourly rates directly, allowing customers to easily plan appointments without scheduling conflicts.
+                </p>
+            </div>
+        </div>
+
+        <!-- Pillar 3: Midnight Black -->
+        <div class="col-md-4">
+            <div class="card card-modern card-accent-dark h-100 p-4 text-start">
+                <div class="rounded-3 p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 54px; height: 54px; background-color: var(--ff-yellow-light); color: var(--ff-yellow);">
+                    <i class="bi bi-shield-lock-fill fs-3"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Role Management</h5>
+                <p class="text-muted small mb-0" style="line-height: 1.6;">
+                    Dedicated secure workspaces for Customers, Technicians, Facility Employees, and System Administrators with granular role permissions.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technician CTA Banner (Midnight Black + Royal Blue + Vibrant Yellow) -->
+    <div class="p-4 p-md-5 rounded-4 text-white text-center position-relative overflow-hidden shadow-lg" style="background: linear-gradient(135deg, #0b111e 0%, #111827 45%, #1e3b7b 100%); border: 1.5px solid rgba(245, 166, 35, 0.3);">
+        <div class="position-relative" style="z-index: 1;">
+            <span class="badge rounded-pill px-3 py-2 mb-3" style="background-color: rgba(245, 166, 35, 0.15); color: #ffb703; border: 1.5px solid #f5a623;">
+                <i class="bi bi-tools me-1 text-warning"></i> Join Fixawyy as a Pro
+            </span>
+            <h2 class="fw-bold mb-2 text-white">Are You a Skilled Maintenance Technician?</h2>
+            <p class="text-light opacity-75 mb-4 mx-auto" style="max-width: 560px;">
+                Create your verified profile, set your hourly service rate, choose your specialties, and start receiving job requests today.
+            </p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <a asp-controller="Account" asp-action="Register" class="btn btn-yellow-modern px-4 py-2.5">
+                    <i class="bi bi-person-plus-fill me-1"></i> Create Free Account
+                </a>
+                <a asp-controller="Technician" asp-action="Directory" class="btn btn-outline-light px-4 py-2.5" style="border-radius: 0.85rem;">
+                    <i class="bi bi-search me-1 text-warning"></i> Browse Directory
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

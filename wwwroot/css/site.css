@@ -1,0 +1,749 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* ========================================================
+   FIXAWYY UNIFIED BRAND IDENTITY (LIGHT & DARK COLOR SYSTEMS)
+   ======================================================== */
+:root {
+    /* Brand Color Triad (Extracted From Mascot Logo) */
+    --ff-blue: #2a4fa0;
+    --ff-blue-hover: #1e3b7b;
+    --ff-blue-active: #162c5e;
+    --ff-blue-light: #eef4ff;
+    --ff-blue-border: #cad9f7;
+    
+    --ff-yellow: #f5a623;
+    --ff-yellow-bright: #ffb703;
+    --ff-yellow-hover: #d97706;
+    --ff-yellow-light: #fffbeb;
+    --ff-yellow-border: #fde68a;
+
+    --ff-black: #111827;
+    --ff-black-dark: #0b111e;
+    --ff-black-soft: #1f2937;
+    --ff-slate: #374151;
+    --ff-muted: #6b7280;
+
+    /* Light Theme Surfaces */
+    --ff-bg: #ecf1f8;
+    --ff-card: #ffffff;
+    --ff-card-subtle: #f8fafc;
+    --ff-border: #dbe4f3;
+    --ff-text: #111827;
+    --ff-text-muted: #64748b;
+    --ff-input-bg: #ffffff;
+    --ff-input-border: #cbd5e1;
+
+    /* Semantic Mappings */
+    --ff-primary: var(--ff-blue);
+    --ff-primary-hover: var(--ff-blue-hover);
+    --ff-accent: var(--ff-yellow);
+    --ff-accent-hover: var(--ff-yellow-hover);
+    --ff-dark: var(--ff-black);
+
+    /* Functional States */
+    --ff-success: #10b981;
+    --ff-warning: var(--ff-yellow);
+    --ff-danger: #ef4444;
+
+    /* Bootstrap Overrides */
+    --bs-primary: #2a4fa0;
+    --bs-primary-rgb: 42, 79, 160;
+    --bs-link-color: #2a4fa0;
+    --bs-link-hover-color: #1e3b7b;
+}
+
+/* ========================================================
+   DARK THEME VARIABLE OVERRIDES [data-bs-theme="dark"]
+   ======================================================== */
+[data-bs-theme="dark"] {
+    --ff-bg: #0b0f19;
+    --ff-card: #131c2e;
+    --ff-card-subtle: #0f1726;
+    --ff-border: #222f46;
+    --ff-text: #f8fafc;
+    --ff-text-muted: #94a3b8;
+    --ff-input-bg: #0d1522;
+    --ff-input-border: #222f46;
+
+    /* In Dark Mode, Blue lifts slightly for superior contrast */
+    --ff-blue: #3b82f6;
+    --ff-blue-hover: #2563eb;
+    --ff-blue-light: rgba(59, 130, 246, 0.15);
+    --ff-blue-border: rgba(59, 130, 246, 0.35);
+
+    --ff-yellow: #f5a623;
+    --ff-yellow-bright: #ffb703;
+    --ff-yellow-light: rgba(245, 166, 35, 0.14);
+    --ff-yellow-border: rgba(245, 166, 35, 0.38);
+
+    --bs-body-bg: #0b0f19;
+    --bs-body-color: #f1f5f9;
+    --bs-primary: #3b82f6;
+    --bs-primary-rgb: 59, 130, 246;
+    --bs-link-color: #60a5fa;
+    --bs-link-hover-color: #93c5fd;
+}
+
+/* ========================================================
+   GLOBAL BASE & BACKGROUNDS
+   ======================================================== */
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--ff-bg);
+    background-image: 
+        radial-gradient(1200px circle at 85% 5%, rgba(245, 166, 35, 0.18) 0%, transparent 60%),
+        radial-gradient(1000px circle at 10% 20%, rgba(42, 79, 160, 0.15) 0%, transparent 55%),
+        radial-gradient(1000px circle at 50% 90%, rgba(17, 24, 39, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #edf2f9 0%, #e6ecf6 100%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
+    color: var(--ff-slate);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+[data-bs-theme="dark"] body {
+    background-color: #0b0f19;
+    background-image: 
+        radial-gradient(1200px circle at 85% 5%, rgba(245, 166, 35, 0.14) 0%, transparent 60%),
+        radial-gradient(1000px circle at 10% 20%, rgba(59, 130, 246, 0.14) 0%, transparent 55%),
+        radial-gradient(1000px circle at 50% 90%, rgba(0, 0, 0, 0.35) 0%, transparent 60%),
+        linear-gradient(180deg, #0b0f19 0%, #0d1424 100%);
+    color: #e2e8f0;
+}
+
+main {
+    flex: 1;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--ff-text);
+    font-weight: 700;
+}
+
+[data-bs-theme="dark"] h1, 
+[data-bs-theme="dark"] h2, 
+[data-bs-theme="dark"] h3, 
+[data-bs-theme="dark"] h4, 
+[data-bs-theme="dark"] h5, 
+[data-bs-theme="dark"] h6 {
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Bootstrap Color Helpers Overrides */
+.text-primary {
+    color: var(--ff-blue) !important;
+}
+
+.text-warning {
+    color: var(--ff-yellow) !important;
+}
+
+.bg-primary {
+    background-color: var(--ff-blue) !important;
+}
+
+.bg-primary-subtle {
+    background-color: var(--ff-blue-light) !important;
+}
+
+.border-primary-subtle {
+    border-color: var(--ff-blue-border) !important;
+}
+
+.bg-warning-subtle {
+    background-color: var(--ff-yellow-light) !important;
+}
+
+.border-warning-subtle {
+    border-color: var(--ff-yellow-border) !important;
+}
+
+/* ========================================================
+   MODERN TOP TOOLBAR / NAVBAR (Midnight Black + Golden Yellow Border)
+   ======================================================== */
+.navbar-modern {
+    background-color: #111827;
+    border-bottom: 3.5px solid #f5a623;
+    padding: 0.8rem 0;
+    box-shadow: 0 6px 22px rgba(11, 17, 30, 0.35);
+    transition: all 0.2s ease-in-out;
+}
+
+[data-bs-theme="dark"] .navbar-modern {
+    background-color: #0b0f19;
+    border-bottom: 3.5px solid #f5a623;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    color: #ffffff;
+    transition: transform 0.2s ease;
+}
+
+.navbar-brand:hover {
+    transform: translateY(-1px);
+}
+
+.nav-link-modern {
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 0.935rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem;
+    transition: all 0.18s ease-in-out;
+}
+
+.nav-link-modern:hover {
+    color: #ffb703;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.nav-link-modern.active {
+    color: #111827;
+    background-color: #f5a623;
+    font-weight: 700;
+}
+
+/* Mobile Toggler */
+.navbar-toggler {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(245, 166, 35, 0.5) !important;
+    color: #f5a623 !important;
+}
+
+/* User Profile Chip in Navbar */
+.nav-user-chip {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem 0.35rem 0.45rem;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(245, 166, 35, 0.4);
+    color: #ffb703;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(245, 166, 35, 0.2);
+    border-color: #f5a623;
+    transform: rotate(15deg) scale(1.06);
+    box-shadow: 0 0 14px rgba(245, 166, 35, 0.35);
+}
+
+/* ========================================================
+   MODERN FOOTER (Midnight Black + Golden Yellow Border)
+   ======================================================== */
+.footer-modern {
+    background-color: #111827;
+    border-top: 3.5px solid #f5a623;
+    color: #94a3b8;
+    padding: 1.5rem 0;
+    margin-top: auto;
+    font-size: 0.875rem;
+}
+
+[data-bs-theme="dark"] .footer-modern {
+    background-color: #0b0f19;
+    border-top: 3.5px solid #f5a623;
+}
+
+.footer-modern span {
+    color: #cbd5e1;
+}
+
+/* ========================================================
+   MODERN CARD STYLES
+   ======================================================== */
+.card-modern {
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 18px -2px rgba(17, 24, 39, 0.07), 0 2px 6px -1px rgba(42, 79, 160, 0.04);
+    transition: all 0.22s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-modern:hover {
+    box-shadow: 0 16px 32px -4px rgba(42, 79, 160, 0.14), 0 6px 12px -2px rgba(17, 24, 39, 0.06);
+    border-color: var(--ff-blue-border);
+}
+
+[data-bs-theme="dark"] .card-modern {
+    background-color: #131c2e;
+    border-color: #222f46;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-bs-theme="dark"] .card-modern:hover {
+    border-color: var(--ff-blue);
+    box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.6), 0 0 18px rgba(59, 130, 246, 0.18);
+}
+
+/* Top Accent Bars on Cards */
+.card-accent-blue {
+    border-top: 4px solid var(--ff-blue) !important;
+}
+
+.card-accent-yellow {
+    border-top: 4px solid var(--ff-yellow) !important;
+}
+
+.card-accent-dark {
+    border-top: 4px solid var(--ff-black) !important;
+}
+
+[data-bs-theme="dark"] .card-accent-dark {
+    border-top: 4px solid #64748b !important;
+}
+
+.card-auth-header {
+    height: 5px;
+    background: linear-gradient(90deg, #2a4fa0 0%, #1e3b7b 40%, #f5a623 85%, #ffb703 100%);
+    width: 100%;
+}
+
+/* ========================================================
+   UNIFIED BUTTON SYSTEMS (Vibrant Yellow, Royal Blue, Dark, Outline)
+   ======================================================== */
+/* 1. Vibrant Mascot Yellow Button (Cap & Wrench) */
+.btn-yellow-modern {
+    background-color: var(--ff-yellow);
+    background-image: linear-gradient(180deg, #ffc038 0%, #f5a623 100%);
+    border: 1.5px solid #d97706;
+    color: #111827 !important;
+    font-weight: 700;
+    border-radius: 0.85rem;
+    padding: 0.65rem 1.35rem;
+    transition: all 0.18s ease-in-out;
+    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.38);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+.btn-yellow-modern:hover {
+    background-color: #d97706;
+    background-image: none;
+    color: #111827 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 24px rgba(245, 166, 35, 0.55);
+}
+
+.btn-yellow-modern:active {
+    transform: translateY(0);
+}
+
+/* 2. Royal Blue Button (Fixawyy Blue) */
+.btn-primary-modern, .btn-blue-modern {
+    background-color: var(--ff-blue);
+    background-image: linear-gradient(180deg, #355db7 0%, #2a4fa0 100%);
+    border: 1.5px solid #1e3b7b;
+    color: #ffffff !important;
+    font-weight: 700;
+    border-radius: 0.85rem;
+    padding: 0.65rem 1.35rem;
+    transition: all 0.18s ease-in-out;
+    box-shadow: 0 4px 14px rgba(42, 79, 160, 0.30);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+[data-bs-theme="dark"] .btn-primary-modern, 
+[data-bs-theme="dark"] .btn-blue-modern {
+    background-color: #2563eb;
+    background-image: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+    border-color: #1d4ed8;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+
+.btn-primary-modern:hover, .btn-blue-modern:hover {
+    background-color: #1e3b7b;
+    background-image: none;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 22px rgba(42, 79, 160, 0.46);
+}
+
+.btn-primary-modern:active, .btn-blue-modern:active {
+    transform: translateY(0);
+}
+
+/* 3. Midnight Dark Button */
+.btn-dark-modern {
+    background-color: var(--ff-black);
+    background-image: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+    border: 1.5px solid #111827;
+    color: #ffffff !important;
+    font-weight: 700;
+    border-radius: 0.85rem;
+    padding: 0.65rem 1.35rem;
+    transition: all 0.18s ease-in-out;
+    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+[data-bs-theme="dark"] .btn-dark-modern {
+    background-color: #1e293b;
+    background-image: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+    border-color: #334155;
+    color: #f8fafc !important;
+}
+
+.btn-dark-modern:hover {
+    background-color: #1f2937;
+    color: #ffb703 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(17, 24, 39, 0.35);
+}
+
+/* 4. Crisp Outline Modern Buttons */
+.btn-outline-modern {
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: var(--ff-black);
+    font-weight: 600;
+    border-radius: 0.85rem;
+    padding: 0.65rem 1.35rem;
+    transition: all 0.18s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+[data-bs-theme="dark"] .btn-outline-modern {
+    background: #131c2e;
+    border-color: #222f46;
+    color: #f1f5f9;
+}
+
+.btn-outline-modern:hover {
+    background-color: var(--ff-blue-light);
+    border-color: var(--ff-blue-border);
+    color: var(--ff-blue);
+    transform: translateY(-1.5px);
+}
+
+.btn-outline-dark-modern {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 0.85rem;
+    padding: 0.55rem 1.15rem;
+    transition: all 0.18s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+.btn-outline-dark-modern:hover {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #111827 !important;
+    transform: translateY(-1.5px);
+}
+
+/* ========================================================
+   FORM CONTROLS
+   ======================================================== */
+.form-control-modern {
+    border: 1.5px solid var(--ff-input-border);
+    border-radius: 0.85rem;
+    padding: 0.68rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.15s ease-in-out;
+    background-color: var(--ff-input-bg);
+    color: var(--ff-text);
+}
+
+.form-control-modern:focus {
+    border-color: var(--ff-blue);
+    box-shadow: 0 0 0 3.5px rgba(42, 79, 160, 0.18);
+    outline: none;
+    background-color: var(--ff-input-bg);
+    color: var(--ff-text);
+}
+
+[data-bs-theme="dark"] .form-control-modern {
+    background-color: #0d1522;
+    border-color: #222f46;
+    color: #f8fafc;
+}
+
+[data-bs-theme="dark"] .form-control-modern:focus {
+    border-color: #f5a623;
+    box-shadow: 0 0 0 3.5px rgba(245, 166, 35, 0.22);
+    background-color: #0d1522;
+    color: #f8fafc;
+}
+
+[data-bs-theme="dark"] .input-group-text {
+    background-color: #0d1522 !important;
+    border-color: #222f46 !important;
+    color: #94a3b8 !important;
+}
+
+[data-bs-theme="dark"] .form-select {
+    background-color: #0d1522;
+    border-color: #222f46;
+    color: #f8fafc;
+}
+
+.form-label {
+    color: var(--ff-text);
+    font-weight: 600;
+}
+
+[data-bs-theme="dark"] .form-label {
+    color: #f8fafc;
+}
+
+/* ========================================================
+   BRAND PILLS & HIGHLIGHT BADGES
+   ======================================================== */
+.brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1.15rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background-color: #fff8e6;
+    border: 1.5px solid #fde088;
+    color: #111827;
+    box-shadow: 0 3px 10px rgba(245, 166, 35, 0.18);
+}
+
+[data-bs-theme="dark"] .brand-pill {
+    background-color: rgba(245, 166, 35, 0.14);
+    border-color: rgba(245, 166, 35, 0.38);
+    color: #ffb703;
+    box-shadow: 0 3px 12px rgba(245, 166, 35, 0.15);
+}
+
+.brand-pill i {
+    color: var(--ff-yellow);
+}
+
+/* Role Badges */
+.badge-role-admin {
+    background-color: #111827;
+    color: #ffb703;
+    border: 1px solid #1f2937;
+    font-weight: 700;
+}
+
+[data-bs-theme="dark"] .badge-role-admin {
+    background-color: #0b0f19;
+    color: #ffb703;
+    border-color: #f5a623;
+}
+
+.badge-role-manager {
+    background-color: #0c4a6e;
+    color: #bae6fd;
+    border: 1px solid #0369a1;
+}
+
+.badge-role-technician {
+    background-color: var(--ff-blue-light);
+    color: var(--ff-blue);
+    border: 1px solid var(--ff-blue-border);
+    font-weight: 700;
+}
+
+.badge-role-customer {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+[data-bs-theme="dark"] .badge-role-customer {
+    background-color: #1e293b;
+    color: #cbd5e1;
+    border-color: #334155;
+}
+
+.badge-role-employee {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-weight: 700;
+}
+
+[data-bs-theme="dark"] .badge-role-employee {
+    background-color: rgba(245, 166, 35, 0.15);
+    color: #ffb703;
+    border-color: rgba(245, 166, 35, 0.35);
+}
+
+/* ========================================================
+   HERO MASCOT SHOWCASE & FLOATING BADGES
+   ======================================================== */
+.mascot-hero-card {
+    position: relative;
+    display: inline-block;
+    padding: 0.9rem;
+    background: #ffffff;
+    border: 3px solid #f5a623;
+    border-radius: 2.2rem;
+    box-shadow: 0 20px 45px -10px rgba(42, 79, 160, 0.22), 0 0 0 4px rgba(245, 166, 35, 0.25);
+    transition: transform 0.3s ease;
+}
+
+[data-bs-theme="dark"] .mascot-hero-card {
+    background: #131c2e;
+    border-color: #f5a623;
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(245, 166, 35, 0.3);
+}
+
+.mascot-hero-card:hover {
+    transform: translateY(-4px) scale(1.02);
+}
+
+.floating-badge {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 9999px;
+    padding: 0.45rem 1rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    box-shadow: 0 10px 25px -5px rgba(17, 24, 39, 0.16);
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+}
+
+[data-bs-theme="dark"] .floating-badge {
+    background: #131c2e;
+    color: #f8fafc;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.floating-badge-left {
+    bottom: -10px;
+    left: -35px;
+    color: #111827;
+    background: #fffdf5;
+    border: 1.5px solid var(--ff-yellow-border);
+}
+
+[data-bs-theme="dark"] .floating-badge-left {
+    background: #131c2e;
+    color: #f8fafc;
+    border-color: rgba(245, 166, 35, 0.4);
+}
+
+.floating-badge-right {
+    top: 15px;
+    right: -35px;
+    color: #111827;
+    background: #f0f5ff;
+    border: 1.5px solid var(--ff-blue-border);
+}
+
+[data-bs-theme="dark"] .floating-badge-right {
+    background: #131c2e;
+    color: #f8fafc;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 1.05rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ff-text);
+    background: var(--ff-card);
+    border: 1.5px solid var(--ff-border);
+    text-decoration: none;
+    transition: all 0.18s ease-in-out;
+    box-shadow: 0 2px 6px rgba(17, 24, 39, 0.04);
+}
+
+[data-bs-theme="dark"] .category-chip {
+    background-color: #131c2e;
+    border-color: #222f46;
+    color: #f1f5f9;
+}
+
+.category-chip:hover {
+    color: var(--ff-blue);
+    background: var(--ff-blue-light);
+    border-color: var(--ff-blue-border);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(42, 79, 160, 0.12);
+}
+
+[data-bs-theme="dark"] .category-chip:hover {
+    color: #ffb703;
+    background-color: #1e293b;
+    border-color: #f5a623;
+    box-shadow: 0 6px 16px rgba(245, 166, 35, 0.2);
+}
+
+/* ========================================================
+   TABLES & LISTS IN DARK MODE
+   ======================================================== */
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-hover-bg: #1a253c;
+    color: #e2e8f0;
+    border-color: #222f46;
+}
+
+[data-bs-theme="dark"] .table thead {
+    background-color: #0b0f19 !important;
+    border-bottom: 2px solid #f5a623 !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #0d1522 !important;
+    border-color: #222f46 !important;
+    color: #e2e8f0 !important;
+}

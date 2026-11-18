@@ -1,0 +1,190 @@
+@model Fixawyy.Model_Views.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-md-8 col-lg-7">
+        <div class="card card-modern border-0 shadow-lg overflow-hidden">
+            <div class="card-auth-header"></div>
+            <div class="p-4 p-sm-5">
+                <div class="text-center mb-4">
+                    <div class="d-inline-block rounded-circle p-1 mb-3" style="border: 2.5px solid #f5a623; box-shadow: 0 4px 12px rgba(245, 166, 35, 0.3);">
+                        <img src="~/images/logo.jpg" alt="Fixawyy Logo" class="rounded-circle" style="width: 80px; height: 80px; object-fit: contain;" />
+                    </div>
+                    <h3 class="fw-bold mb-1">Create an Account</h3>
+                    <p class="text-muted small">Register to access maintenance bookings and services on Fixawyy</p>
+                </div>
+
+                <form asp-action="Register" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <!-- Personal Information -->
+                    <h6 class="fw-bold mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="bi bi-person-fill text-primary"></i>
+                        <span>1. Personal Information</span>
+                    </h6>
+
+                    <!-- Profile Picture (Mandatory) -->
+                    <div class="mb-4 p-3 bg-light rounded-3 border" style="border-left: 4px solid #f5a623 !important;">
+                        <label asp-for="ProfilePicture" class="form-label small fw-semibold mb-1">
+                            Personal Profile Picture <span class="text-danger">* (Required / صورة شخصية مطلوبة)</span>
+                        </label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="avatarPreviewContainer" class="rounded-circle border d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0" style="width: 60px; height: 60px; border: 2px solid #f5a623 !important;">
+                                <i id="avatarPlaceholder" class="bi bi-person text-muted fs-2"></i>
+                                <img id="avatarPreview" src="#" alt="Preview" class="w-100 h-100 object-fit-cover d-none" />
+                            </div>
+                            <div class="flex-grow-1">
+                                <input asp-for="ProfilePicture" type="file" accept="image/*" class="form-control form-control-modern form-control-sm" id="profilePicInput" onchange="previewProfilePic(this)" />
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Upload a personal picture (JPG, PNG, or WEBP, max 5MB).</small>
+                                <span asp-validation-for="ProfilePicture" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label small fw-semibold">
+                                Full Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="FullName" class="form-control form-control-modern" placeholder="e.g. Ahmed Mahmoud" />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label small fw-semibold">
+                                Email Address <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Email" class="form-control form-control-modern" placeholder="name@domain.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Country" class="form-label small fw-semibold">
+                                Country <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="Country" class="form-select form-control-modern">
+                                <option value="Egypt" selected>🇪🇬 Egypt (مصر)</option>
+                                <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
+                                <option value="United Arab Emirates">🇦🇪 United Arab Emirates</option>
+                                <option value="Other">🌍 Other</option>
+                            </select>
+                            <span asp-validation-for="Country" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="NationalId" class="form-label small fw-semibold">
+                                National ID (الرقم القومي) <span class="text-danger">* (14 Digits)</span>
+                            </label>
+                            <input asp-for="NationalId" maxlength="14" pattern="[0-9]{14}"
+                                   class="form-control form-control-modern font-monospace"
+                                   placeholder="2990101XXXXXXXXX" />
+                            <span asp-validation-for="NationalId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="DateOfBirth" class="form-label small fw-semibold">
+                                Date of Birth <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="DateOfBirth" type="date" class="form-control form-control-modern" />
+                            <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Role" class="form-label small fw-semibold">
+                                Account Type <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="Role" class="form-select form-control-modern">
+                                <option value="Customer">👤 Customer (Book technicians)</option>
+                                <option value="Technician">🔧 Skilled Technician (Provide maintenance)</option>
+                                <option value="Employee">🏢 Facility Employee (Corporate requests)</option>
+                            </select>
+                            <span asp-validation-for="Role" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Contact & Security -->
+                    <h6 class="fw-bold mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-lock-fill text-primary"></i>
+                        <span>2. Contact Numbers &amp; Security</span>
+                    </h6>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="PhoneNumber" class="form-label small fw-semibold">
+                                Primary Phone Number <span class="text-danger">* (Required)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone-fill text-primary"></i></span>
+                                <input asp-for="PhoneNumber" class="form-control form-control-modern" placeholder="+20 100 000 0000" />
+                            </div>
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="SecondaryPhoneNumber" class="form-label small fw-semibold">
+                                Secondary Phone <span class="text-muted fw-normal">(Optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                <input asp-for="SecondaryPhoneNumber" class="form-control form-control-modern" placeholder="+20 111 000 0000" />
+                            </div>
+                            <span asp-validation-for="SecondaryPhoneNumber" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label small fw-semibold">
+                                Password <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Password" class="form-control form-control-modern" placeholder="••••••••" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ConfirmPassword" class="form-label small fw-semibold">
+                                Confirm Password <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ConfirmPassword" class="form-control form-control-modern" placeholder="••••••••" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-yellow-modern w-100 py-2.5 fs-6">
+                        <i class="bi bi-arrow-right-circle me-1"></i>Continue to Email Verification
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <span class="text-muted small">Already have an account? </span>
+                    <a asp-action="Login" class="small fw-bold text-primary text-decoration-none">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewProfilePic(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('avatarPreview');
+                    const placeholder = document.getElementById('avatarPlaceholder');
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                    placeholder.classList.add('d-none');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

@@ -1,0 +1,149 @@
+@model Fixawyy.Model_Views.TechnicianDirectoryViewModel
+@{
+    ViewData["Title"] = "Technician Directory";
+}
+
+<div class="py-4">
+    <!-- Header -->
+    <div class="text-center max-w-2xl mx-auto mb-4 pb-2">
+        <div class="d-inline-flex align-items-center gap-2 mb-2">
+            <span class="brand-pill">
+                <i class="bi bi-patch-check-fill text-warning"></i>
+                <span>Fixawyy Directory • Certified Pros</span>
+            </span>
+        </div>
+        <h2 class="fw-bold display-6 mb-2">Verified Maintenance Technicians</h2>
+        <p class="text-muted">Find certified plumbers, electricians, carpenters, and AC technicians for your repairs.</p>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="card card-modern p-3 mb-4">
+        <form method="get" asp-action="Directory" class="row g-3 align-items-center">
+            <div class="col-md-7">
+                <div class="input-group">
+                    <span class="input-group-text border-end-0"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" name="search" value="@Model.Search" class="form-control form-control-modern border-start-0" placeholder="Search by name, bio, or skill..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="specialtyId" class="form-select form-control-modern">
+                    <option value="">All Specialties</option>
+                    @foreach (var s in Model.Specialties)
+                    {
+                        <option value="@s.Id" selected="@(Model.SelectedSpecialtyId == s.Id)">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-yellow-modern w-100">
+                    <i class="bi bi-search me-1"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Grid -->
+    <div class="row g-4">
+        @if (Model.Technicians.Count == 0)
+        {
+            <div class="col-12 text-center py-5">
+                <div class="card card-modern p-5 text-center">
+                    <div class="rounded-circle bg-warning-subtle text-warning d-inline-flex align-items-center justify-content-center p-3 mb-3 mx-auto" style="width: 64px; height: 64px;">
+                        <i class="bi bi-tools fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold">No technicians found</h5>
+                    <p class="text-muted small">Try searching with a different term or clearing the specialty filter.</p>
+                    <a asp-action="Directory" class="btn btn-primary-modern btn-sm mt-2 mx-auto">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Clear All Filters
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var tech in Model.Technicians)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card card-modern card-accent-blue h-100 p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <!-- Card Header -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(tech.ProfilePictureUrl))
+                                    {
+                                        <img src="@tech.ProfilePictureUrl" alt="@tech.FullName" class="rounded-circle border object-fit-cover shadow-sm flex-shrink-0" style="width: 50px; height: 50px; border-color: #f5a623 !important; border-width: 2px !important;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-5 d-flex align-items-center justify-content-center border border-primary-subtle flex-shrink-0" style="width: 50px; height: 50px;">
+                                            @(tech.FullName.Length > 0 ? tech.FullName[0] : 'T')
+                                        </div>
+                                    }
+                                    <div>
+                                        <h6 class="fw-bold mb-0">@tech.FullName</h6>
+                                        @if (tech.ReviewCount == 0)
+                                        {
+                                            <div class="d-flex align-items-center gap-1 small mt-0.5">
+                                                <i class="bi bi-star text-muted"></i>
+                                                <span class="fw-semibold text-secondary" style="font-size: 0.8rem;">0.0</span>
+                                                <span class="badge bg-light text-muted border fw-normal ms-1" style="font-size: 0.68rem;">New Pro</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex align-items-center gap-1 small text-warning mt-0.5">
+                                                <i class="bi bi-star-fill"></i>
+                                                <span class="fw-bold">@tech.Rating.ToString("F1")</span>
+                                                <span class="text-muted" style="font-size: 0.75rem;">(@tech.ReviewCount reviews)</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (tech.IsAvailable)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 0.72rem;">
+                                        &bull; Available
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-muted rounded-pill" style="font-size: 0.72rem;">
+                                        Busy
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- Bio -->
+                            <p class="text-muted small mb-3" style="min-height: 48px; line-height: 1.55;">
+                                @(string.IsNullOrEmpty(tech.Bio) ? "Experienced maintenance specialist ready to assist with repair tasks." : tech.Bio)
+                            </p>
+
+                            <!-- Specialty Tags -->
+                            <div class="d-flex flex-wrap gap-1 mb-3">
+                                @foreach (var sp in tech.Specialties)
+                                {
+                                    <span class="badge rounded-pill bg-light text-muted border fw-medium px-2.5 py-1" style="font-size: 0.75rem;">
+                                        <i class="bi bi-tag-fill text-warning me-1" style="font-size: 0.65rem;"></i>@sp
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="pt-3 border-top d-flex justify-content-between align-items-center mt-2">
+                            <div>
+                                <small class="text-muted d-block fw-bold" style="font-size: 0.68rem; letter-spacing: 0.5px;">HOURLY RATE</small>
+                                <span class="fw-extrabold text-primary fs-5">@tech.HourlyRate.ToString("N0") <span class="small fw-semibold text-muted" style="font-size: 0.8rem;">EGP/hr</span></span>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted d-block fw-bold" style="font-size: 0.68rem; letter-spacing: 0.5px;">EXPERIENCE</small>
+                                <span class="fw-bold fs-6">@tech.YearsOfExperience <span class="small fw-normal text-muted">Years</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

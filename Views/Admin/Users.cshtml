@@ -1,0 +1,182 @@
+@model Fixawyy.Model_Views.UserManagementViewModel
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-4 mb-4 border-bottom gap-3">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 mb-1">
+                <span class="brand-pill">
+                    <i class="bi bi-shield-check text-warning"></i>
+                    <span>Fixawyy Administration</span>
+                </span>
+            </div>
+            <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill text-primary"></i>
+                <span>User &amp; Role Management</span>
+            </h2>
+            <p class="text-muted small mb-0">Control system users, assign role privileges, and toggle active status.</p>
+        </div>
+        <div>
+            <a asp-action="Users" class="btn btn-outline-modern btn-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Reset Filters</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="card card-modern p-3 mb-4">
+        <form method="get" asp-action="Users" class="row g-3 align-items-center">
+            <div class="col-md-7">
+                <div class="input-group">
+                    <span class="input-group-text border-end-0"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" name="search" value="@Model.Search" class="form-control form-control-modern border-start-0" placeholder="Search by full name or email address..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="role" class="form-select form-control-modern">
+                    <option value="">All Roles (Filter)</option>
+                    @foreach (var r in Model.AvailableRoles)
+                    {
+                        <option value="@r" selected="@(r.Equals(Model.RoleFilter, StringComparison.OrdinalIgnoreCase))">@r</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-yellow-modern w-100">
+                    <i class="bi bi-funnel me-1"></i>Apply Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="card card-modern border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="text-uppercase small">
+                    <tr>
+                        <th class="ps-4 py-3 text-white">User Details</th>
+                        <th class="py-3 text-white">Contact</th>
+                        <th class="py-3 text-white">Current Roles</th>
+                        <th class="py-3 text-white">Status</th>
+                        <th class="py-3 text-white">Change Role</th>
+                        <th class="text-end pe-4 py-3 text-white">Account Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    @if (Model.Users.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                                No users found matching your search.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var u in Model.Users)
+                        {
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrEmpty(u.ProfilePictureUrl))
+                                        {
+                                            <img src="@u.ProfilePictureUrl" alt="@u.FullName" class="rounded-circle border object-fit-cover shadow-sm flex-shrink-0" style="width: 40px; height: 40px; border-color: #f5a623 !important; border-width: 2px !important;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center border border-primary-subtle flex-shrink-0" style="width: 40px; height: 40px; font-size: 0.95rem;">
+                                                @(u.FullName.Length > 0 ? u.FullName[0] : 'U')
+                                            </div>
+                                        }
+                                        <div>
+                                            <div class="fw-bold">@u.FullName</div>
+                                            <div class="text-muted small" style="font-size: 0.72rem;">ID: @u.Id.Substring(0, Math.Min(8, u.Id.Length))...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <div class="small fw-semibold">@u.Email</div>
+                                    <div class="text-muted small">@(string.IsNullOrEmpty(u.PhoneNumber) ? "No phone" : u.PhoneNumber)</div>
+                                </td>
+                                <td class="py-3">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var r in u.Roles)
+                                        {
+                                            <span class="badge rounded-pill badge-role-@r.ToLower() fw-semibold px-2 py-1">@r</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    @if (u.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bi bi-check-circle me-1"></i>Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bi bi-x-circle me-1"></i>Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td class="py-3">
+                                    <form asp-action="AssignRole" method="post" class="d-flex align-items-center gap-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@u.Id" />
+                                        <select name="newRole" class="form-select form-select-sm form-control-modern py-1" style="min-width: 120px;">
+                                            @foreach (var r in Model.AvailableRoles)
+                                            {
+                                                <option value="@r" selected="@(u.Roles.Contains(r))">@r</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-yellow-modern py-1 px-2.5" title="Assign Role">
+                                            Save
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-end pe-4 py-3">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <form asp-action="ToggleStatus" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@u.Id" />
+                                            @if (u.IsActive)
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Deactivate Account" onclick="return confirm('Are you sure you want to deactivate this account?');">
+                                                    <i class="bi bi-pause-circle"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2" title="Activate Account">
+                                                    <i class="bi bi-play-circle"></i>
+                                                </button>
+                                            }
+                                        </form>
+
+                                        @if (!u.Email.Equals("admin@fixawyy.com", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <form asp-action="DeleteUser" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@u.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Delete User Account" onclick="return confirm('Are you sure you want to permanently DELETE user @u.FullName (@u.Email)? This cannot be undone.');">
+                                                    <i class="bi bi-trash3-fill"></i> Delete
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
