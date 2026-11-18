@@ -56,13 +56,16 @@
                         </li>
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Employee") || User.IsInRole("FacilityEmployee"))
+                            @if (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin") || User.IsInRole("Manager"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link nav-link-modern" asp-controller="Dispatcher" asp-action="Index">
                                         <i class="bi bi-cpu-fill me-1 text-info"></i>Operations Dispatcher
                                     </a>
                                 </li>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
                                 <li class="nav-item">
                                     <a class="nav-link nav-link-modern" asp-controller="Admin" asp-action="Users">
                                         <i class="bi bi-people-fill me-1 text-warning"></i>User Management
@@ -86,14 +89,14 @@
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">
-                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Employee") || User.IsInRole("FacilityEmployee")))
+                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin") || User.IsInRole("Manager")))
                         {
-                            <!-- Operations Quick Pill (Only for Facility Employees / Admins) -->
+                            <!-- Operations Quick Pill (Only for Facility Admins & Super Admins) -->
                             <a asp-controller="Dispatcher" asp-action="Index" class="btn btn-sm btn-outline-warning d-none d-md-flex align-items-center gap-1 rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
                                 <i class="bi bi-lightning-charge-fill"></i> Dispatch Board
                             </a>
 
-                            <!-- Notification Bell Dropdown (Only for Facility Employees / Admins) -->
+                            <!-- Notification Bell Dropdown (Only for Facility Admins & Super Admins) -->
                             <div class="dropdown me-1">
                                 <button class="btn btn-link text-white p-1 position-relative dropdown-toggle shadow-none" type="button" id="navNotificationBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
                                     <i class="bi bi-bell-fill fs-5"></i>

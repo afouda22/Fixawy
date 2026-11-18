@@ -18,11 +18,19 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         _hubContext = hubContext;
     }
 
-    public async Task<List<TicketSummaryDto>> GetPendingTicketsAsync()
+    public async Task<List<TicketSummaryDto>> GetPendingTicketsAsync(string? facility = null)
     {
-        return await _context.MaintenanceTickets
+        var query = _context.MaintenanceTickets
             .AsNoTracking()
-            .Where(t => t.Status == TicketStatus.Pending)
+            .Where(t => t.Status == TicketStatus.Pending);
+
+        if (!string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase))
+        {
+            var fac = facility.Trim().ToLower();
+            query = query.Where(t => t.Department.ToLower().Contains(fac));
+        }
+
+        return await query
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.CreatedAt)
             .Select(t => new TicketSummaryDto
@@ -161,7 +169,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             AssignedAt = DateTime.UtcNow,
             Status = "Active",
             MatchScore = bestMatch.MatchScore,
-            Notes = notes ?? $"Auto-assigned by Smart Dispatcher Engine (Score: {bestMatch.MatchScore}%)"
+            Notes = notes ?? $"Auto-assigned by Facility Dispatcher Engine (Score: {bestMatch.MatchScore}%)"
         };
 
         _context.Assignments.Add(assignment);
@@ -176,7 +184,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             TargetRole = "Technician",
             RecipientUserId = technician.UserId,
             Title = "New Ticket Assigned",
-            Message = $"You have been assigned ticket: '{ticket.Title}' ({ticket.Priority} Priority).",
+            Message = $"You have been assigned ticket: '{ticket.Title}' ({ticket.Priority} Priority) in {ticket.Department}.",
             EventType = "NewAssignment",
             RelatedTicketId = ticket.Id,
             IsRead = false,
@@ -192,6 +200,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             assignmentId = assignment.Id,
             ticketId = ticket.Id,
             ticketTitle = ticket.Title,
+            department = ticket.Department,
             technicianId = technician.Id,
             technicianName = techName,
             assignedAt = assignment.AssignedAt,
@@ -202,6 +211,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         {
             ticketId = ticket.Id,
             title = ticket.Title,
+            department = ticket.Department,
             newStatus = "Assigned",
             updatedAt = DateTime.UtcNow
         });
@@ -258,7 +268,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             AssignedAt = DateTime.UtcNow,
             Status = "Active",
             MatchScore = score,
-            Notes = notes ?? "Manually assigned by Operations Manager"
+            Notes = notes ?? "Manually assigned by Facility Admin"
         };
 
         _context.Assignments.Add(assignment);
@@ -270,7 +280,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             TargetRole = "Technician",
             RecipientUserId = technician.UserId,
             Title = "New Ticket Assigned",
-            Message = $"You were manually assigned ticket: '{ticket.Title}' by Operations Manager.",
+            Message = $"You were manually assigned ticket: '{ticket.Title}' ({ticket.Department}) by Facility Admin.",
             EventType = "NewAssignment",
             RelatedTicketId = ticket.Id,
             IsRead = false,
@@ -286,6 +296,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             assignmentId = assignment.Id,
             ticketId = ticket.Id,
             ticketTitle = ticket.Title,
+            department = ticket.Department,
             technicianId = technician.Id,
             technicianName = techName,
             assignedAt = assignment.AssignedAt,
@@ -296,6 +307,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         {
             ticketId = ticket.Id,
             title = ticket.Title,
+            department = ticket.Department,
             newStatus = "Assigned",
             updatedAt = DateTime.UtcNow
         });
@@ -324,14 +336,22 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         };
     }
 
-    public async Task<List<AssignmentResponseDto>> GetActiveAssignmentsAsync()
+    public async Task<List<AssignmentResponseDto>> GetActiveAssignmentsAsync(string? facility = null)
     {
-        return await _context.Assignments
+        var query = _context.Assignments
             .AsNoTracking()
             .Include(a => a.Ticket)
             .Include(a => a.Technician)
                 .ThenInclude(tp => tp!.User)
-            .Where(a => a.Status == "Active")
+            .Where(a => a.Status == "Active");
+
+        if (!string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase))
+        {
+            var fac = facility.Trim().ToLower();
+            query = query.Where(a => a.Ticket != null && a.Ticket.Department.ToLower().Contains(fac));
+        }
+
+        return await query
             .OrderByDescending(a => a.AssignedAt)
             .Select(a => new AssignmentResponseDto
             {
@@ -388,6 +408,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         {
             ticketId = assignment.TicketId,
             title = assignment.Ticket?.Title,
+            department = assignment.Ticket?.Department,
             newStatus = "Resolved",
             updatedAt = DateTime.UtcNow
         });
@@ -403,5 +424,16 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         });
 
         return true;
+    }
+
+    public async Task<List<string>> GetFacilitiesAsync()
+    {
+        return await _context.MaintenanceTickets
+            .AsNoTracking()
+            .Select(t => t.Department)
+            .Where(d => !string.IsNullOrEmpty(d))
+            .Distinct()
+            .OrderBy(d => d)
+            .ToListAsync();
     }
 }

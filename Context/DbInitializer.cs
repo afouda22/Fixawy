@@ -22,7 +22,7 @@ public static class DbInitializer
             }
         }
 
-        // 2. Default Admin
+        // 2. Default System Admin
         var adminEmail = "admin@fixawyy.com";
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         if (existingAdmin == null)
@@ -31,7 +31,7 @@ public static class DbInitializer
             {
                 UserName = adminEmail,
                 Email = adminEmail,
-                FullName = "System Administrator",
+                FullName = "System Super Administrator",
                 EmailConfirmed = true,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -44,25 +44,55 @@ public static class DbInitializer
             }
         }
 
-        // 2.1 Default Facility Operations Employee
-        var facilityEmail = "facility@fixawyy.com";
-        var existingFacility = await userManager.FindByEmailAsync(facilityEmail);
-        if (existingFacility == null)
+        // 2.1 Facility Admins (Admins of Employees per Facility)
+        var facilityAdmins = new[]
         {
-            var facilityUser = new ApplicationUser
+            new { Email = "engineering.admin@fixawyy.com", Name = "Eng. Tamer Refaat (Faculty Admin - Engineering)", Role = AppRoles.FacilityAdmin },
+            new { Email = "mall.admin@fixawyy.com", Name = "Hassan Sherif (Facility Admin - Mall Food Court)", Role = AppRoles.FacilityAdmin }
+        };
+
+        foreach (var fa in facilityAdmins)
+        {
+            var existingFa = await userManager.FindByEmailAsync(fa.Email);
+            if (existingFa == null)
             {
-                UserName = facilityEmail,
-                Email = facilityEmail,
-                FullName = "Facility Operations Supervisor",
+                var faUser = new ApplicationUser
+                {
+                    UserName = fa.Email,
+                    Email = fa.Email,
+                    FullName = fa.Name,
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var res = await userManager.CreateAsync(faUser, "Admin@123456");
+                if (res.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(faUser, fa.Role);
+                }
+            }
+        }
+
+        // 2.2 Regular Facility Employee (Submits complaints only, NOT allowed to dispatch)
+        var employeeEmail = "employee@fixawyy.com";
+        var existingEmployee = await userManager.FindByEmailAsync(employeeEmail);
+        if (existingEmployee == null)
+        {
+            var empUser = new ApplicationUser
+            {
+                UserName = employeeEmail,
+                Email = employeeEmail,
+                FullName = "Kareem Adel (Staff Employee - Engineering Dept)",
                 EmailConfirmed = true,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
-            var result = await userManager.CreateAsync(facilityUser, "Facility@123456");
-            if (result.Succeeded)
+            var empRes = await userManager.CreateAsync(empUser, "Employee@123456");
+            if (empRes.Succeeded)
             {
-                await userManager.AddToRoleAsync(facilityUser, AppRoles.FacilityEmployee);
+                await userManager.AddToRoleAsync(empUser, AppRoles.Employee);
             }
         }
 
@@ -206,7 +236,7 @@ public static class DbInitializer
                         AssignedAt = now.AddHours(-i - 1),
                         Status = "Active",
                         MatchScore = 92.5 - (i * 3),
-                        Notes = "Assigned via Dispatcher Engine Seeder"
+                        Notes = "Assigned via Facility Dispatcher Engine"
                     });
                 }
 
@@ -230,9 +260,9 @@ public static class DbInitializer
                 context.NotificationHistories.AddRange(
                     new NotificationHistory
                     {
-                        TargetRole = "Manager",
+                        TargetRole = "FacilityAdmin",
                         Title = "System Initialized",
-                        Message = "Operations Dispatcher Engine loaded successfully with 18 seed tickets.",
+                        Message = "Facility Operations Dispatcher Engine loaded successfully with 18 seed tickets.",
                         EventType = "NewNotification",
                         IsRead = true,
                         CreatedAt = now.AddHours(-24)
@@ -241,7 +271,7 @@ public static class DbInitializer
                     {
                         TargetRole = "Technician",
                         Title = "Critical Ticket Inbound",
-                        Message = "Server Room AC Compressor Failure flagged as Critical priority.",
+                        Message = "Server Room AC Compressor Failure flagged as Critical priority in IT Data Center.",
                         EventType = "NewAssignment",
                         RelatedTicketId = tickets[0].Id,
                         IsRead = false,

@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Operations Dispatcher & Executive Analytics";
+    ViewData["Title"] = "Facility Operations Dispatcher & Executive Analytics";
 }
 
 <div class="dispatcher-container pb-5">
@@ -11,10 +11,10 @@
             </div>
             <div>
                 <div class="d-flex align-items-center gap-2">
-                    <h2 class="fw-bold mb-0 text-white fs-3">Operations Dispatcher & Analytics</h2>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small rounded-pill">Teammate 4 Engine</span>
+                    <h2 class="fw-bold mb-0 text-white fs-3">Facility Operations Dispatcher & Analytics</h2>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small rounded-pill">Facility Admin Engine</span>
                 </div>
-                <p class="text-secondary small mb-0 mt-1">Smart matchmaking algorithm, real-time SignalR push notifications, and executive KPIs.</p>
+                <p class="text-secondary small mb-0 mt-1">Smart matchmaking algorithm, real-time SignalR push notifications, and executive KPIs per facility.</p>
             </div>
         </div>
 
@@ -26,12 +26,33 @@
             </div>
 
             <!-- PDF & CSV Quick Export -->
-            <a href="/api/analytics/export/csv" class="btn btn-outline-light btn-sm rounded-3 d-flex align-items-center gap-1">
+            <a id="exportCsvBtn" href="/api/analytics/export/csv" class="btn btn-outline-light btn-sm rounded-3 d-flex align-items-center gap-1">
                 <i class="bi bi-file-earmark-spreadsheet"></i> CSV
             </a>
-            <a href="/api/analytics/export/pdf" target="_blank" class="btn btn-primary btn-sm rounded-3 d-flex align-items-center gap-1 shadow-sm">
+            <a id="exportPdfBtn" href="/api/analytics/export/pdf" target="_blank" class="btn btn-primary btn-sm rounded-3 d-flex align-items-center gap-1 shadow-sm">
                 <i class="bi bi-file-earmark-pdf"></i> Executive PDF
             </a>
+        </div>
+    </div>
+
+    <!-- Facility Selector Toolbar (Filter Operations Per Facility) -->
+    <div class="card border rounded-4 shadow-sm p-3 mb-4 bg-body">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="rounded-3 p-2 bg-primary-subtle text-primary">
+                    <i class="bi bi-buildings-fill fs-5"></i>
+                </span>
+                <div>
+                    <h6 class="fw-bold mb-0">Facility Context / المنشأة والموقع:</h6>
+                    <small class="text-secondary">Filter tickets, live jobs, and executive analytics by your organization / facility</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label for="facilityFilterSelect" class="small fw-semibold text-secondary mb-0 text-nowrap">Selected Facility:</label>
+                <select id="facilityFilterSelect" onchange="onFacilityFilterChanged()" class="form-select form-select-sm fw-bold border-primary text-primary" style="min-width: 270px;">
+                    <option value="All">🏢 All Facilities (جميع المنشآت والمرافق)</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -69,7 +90,7 @@
                         <div class="card-header bg-body d-flex justify-content-between align-items-center py-3 border-bottom">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="p-1 rounded-circle bg-warning"></span>
-                                <h5 class="fw-bold mb-0 fs-6">Pending Tickets Awaiting Dispatch</h5>
+                                <h5 class="fw-bold mb-0 fs-6">Pending Facility Tickets Awaiting Dispatch</h5>
                             </div>
                             <button onclick="refreshAll()" class="btn btn-sm btn-outline-secondary rounded-3 d-flex align-items-center gap-1">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
@@ -135,21 +156,21 @@
                     <div class="card border rounded-4 shadow-sm h-100 p-3">
                         <span class="text-secondary small fw-bold text-uppercase">Total Incidents</span>
                         <h3 id="kpiTotalTickets" class="fw-extrabold text-primary my-1">--</h3>
-                        <span class="text-secondary small">All recorded tickets</span>
+                        <span class="text-secondary small">Recorded in facility</span>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl">
                     <div class="card border rounded-4 shadow-sm h-100 p-3">
                         <span class="text-warning small fw-bold text-uppercase">Pending Dispatch</span>
                         <h3 id="kpiPending" class="fw-extrabold text-warning my-1">--</h3>
-                        <span class="text-secondary small">Queue backlog</span>
+                        <span class="text-secondary small">Facility queue backlog</span>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl">
                     <div class="card border rounded-4 shadow-sm h-100 p-3">
                         <span class="text-info small fw-bold text-uppercase">In Progress</span>
                         <h3 id="kpiInProgress" class="fw-extrabold text-info my-1">--</h3>
-                        <span class="text-secondary small">Active assignments</span>
+                        <span class="text-secondary small">Active with technician</span>
                     </div>
                 </div>
                 <div class="col-6 col-md-6 col-xl">
@@ -173,7 +194,7 @@
                 <div class="col-lg-7">
                     <div class="card border rounded-4 shadow-sm h-100 p-4">
                         <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
-                            <i class="bi bi-bar-chart-fill text-primary"></i> Incidents by Department / Facility
+                            <i class="bi bi-bar-chart-fill text-primary"></i> Incidents by Location / Facility
                         </h5>
                         <div style="position: relative; height: 280px;">
                             <canvas id="deptChart"></canvas>
@@ -198,7 +219,7 @@
                     <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
                         <i class="bi bi-trophy-fill text-warning"></i> Technician Efficiency Ranking
                     </h5>
-                    <span class="badge bg-body-secondary text-secondary">Updated real-time</span>
+                    <span class="badge bg-body-secondary text-secondary">Facility Performance</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -284,6 +305,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 
     <script>
+        let currentFacility = 'All';
+
         // --- 1. SignalR Live Hub Connection ---
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/hubs/notifications")
@@ -351,7 +374,37 @@
             toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
         }
 
-        // --- 3. Refresh All Boards ---
+        // --- 3. Facility Filter & List Loader ---
+        async function loadFacilitiesList() {
+            try {
+                const res = await fetch('/api/assignment/facilities');
+                if (!res.ok) return;
+                const facilities = await res.json();
+                const select = document.getElementById('facilityFilterSelect');
+                if (!select) return;
+
+                select.innerHTML = '<option value="All">🏢 All Facilities (جميع المنشآت والمرافق)</option>' +
+                    facilities.map(f => `<option value="${f}">📍 ${f}</option>`).join('');
+            } catch(e) {
+                console.error("Error loading facilities:", e);
+            }
+        }
+
+        function onFacilityFilterChanged() {
+            const select = document.getElementById('facilityFilterSelect');
+            if (!select) return;
+            currentFacility = select.value;
+
+            const exportCsv = document.getElementById('exportCsvBtn');
+            const exportPdf = document.getElementById('exportPdfBtn');
+            if (exportCsv) exportCsv.href = `/api/analytics/export/csv?facility=${encodeURIComponent(currentFacility)}`;
+            if (exportPdf) exportPdf.href = `/api/analytics/export/pdf?facility=${encodeURIComponent(currentFacility)}`;
+
+            showToast("🏢 Facility Filter Applied", `Showing operations for: ${currentFacility}`, "info");
+            refreshAll();
+        }
+
+        // --- 4. Refresh All Boards ---
         function refreshAll() {
             loadPendingTickets();
             loadActiveAssignments();
@@ -360,10 +413,14 @@
             fetchNotifications();
         }
 
-        // --- 4. Load Pending Tickets ---
+        // --- 5. Load Pending Tickets ---
         async function loadPendingTickets() {
             try {
-                const res = await fetch('/api/assignment/pending-tickets');
+                const url = currentFacility && currentFacility !== 'All'
+                    ? `/api/assignment/pending-tickets?facility=${encodeURIComponent(currentFacility)}`
+                    : '/api/assignment/pending-tickets';
+
+                const res = await fetch(url);
                 const tickets = await res.json();
                 const list = document.getElementById('pendingTicketsList');
                 const badgeNav = document.getElementById('pendingBadgeNav');
@@ -374,7 +431,7 @@
                         <div class="p-5 text-center text-secondary border rounded-3 bg-light">
                             <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
                             <h6 class="fw-bold">All caught up!</h6>
-                            <p class="small text-secondary mb-0">No pending tickets awaiting assignment.</p>
+                            <p class="small text-secondary mb-0">No pending tickets awaiting assignment in this facility.</p>
                         </div>
                     `;
                     return;
@@ -416,17 +473,21 @@
             }
         }
 
-        // --- 5. Load Active Dispatched Jobs ---
+        // --- 6. Load Active Dispatched Jobs ---
         async function loadActiveAssignments() {
             try {
-                const res = await fetch('/api/assignment/active');
+                const url = currentFacility && currentFacility !== 'All'
+                    ? `/api/assignment/active?facility=${encodeURIComponent(currentFacility)}`
+                    : '/api/assignment/active';
+
+                const res = await fetch(url);
                 const assignments = await res.json();
                 const list = document.getElementById('activeAssignmentsList');
                 const countBadge = document.getElementById('activeJobsCount');
                 if (countBadge) countBadge.innerText = `${assignments.length} Active`;
 
                 if (assignments.length === 0) {
-                    list.innerHTML = `<div class="text-center py-4 text-secondary small">No active dispatched operations</div>`;
+                    list.innerHTML = `<div class="text-center py-4 text-secondary small">No active dispatched operations for this facility</div>`;
                     return;
                 }
 
@@ -449,10 +510,14 @@
             }
         }
 
-        // --- 6. Technicians Drop Target List ---
+        // --- 7. Technicians Drop Target List ---
         async function loadTechniciansDropList() {
             try {
-                const res = await fetch('/api/analytics/technician-rankings');
+                const url = currentFacility && currentFacility !== 'All'
+                    ? `/api/analytics/technician-rankings?facility=${encodeURIComponent(currentFacility)}`
+                    : '/api/analytics/technician-rankings';
+
+                const res = await fetch(url);
                 const techs = await res.json();
                 const list = document.getElementById('techniciansDropList');
 
@@ -475,7 +540,7 @@
             }
         }
 
-        // --- 7. HTML5 Drag and Drop ---
+        // --- 8. HTML5 Drag and Drop ---
         let draggedTicketId = null;
         let draggedTicketTitle = "";
 
@@ -508,7 +573,7 @@
             await manualAssign(ticketId, techId);
         }
 
-        // --- 8. Auto & Manual Assign ---
+        // --- 9. Auto & Manual Assign ---
         async function triggerAutoAssign(ticketId) {
             try {
                 const res = await fetch(`/api/assignment/auto-assign/${ticketId}`, {
@@ -550,7 +615,7 @@
             }
         }
 
-        // --- 9. Resolve Assignment ---
+        // --- 10. Resolve Assignment ---
         async function resolveAssignment(assignmentId) {
             try {
                 const res = await fetch(`/api/assignment/resolve/${assignmentId}`, { method: 'POST' });
@@ -566,7 +631,7 @@
             }
         }
 
-        // --- 10. Smart Suggest Modal ---
+        // --- 11. Smart Suggest Modal ---
         async function openSmartSuggest(ticketId, ticketTitle) {
             document.getElementById('suggestModalTitle').innerText = ticketTitle;
             document.getElementById('suggestModalSubtitle').innerText = `Smart matchmaking recommendation for Ticket #${ticketId}`;
@@ -618,14 +683,18 @@
             }
         }
 
-        // --- 11. Load Executive Analytics ---
+        // --- 12. Load Executive Analytics ---
         let deptChart = null;
         let statusChart = null;
 
         async function loadAnalyticsData() {
             try {
+                const facParam = currentFacility && currentFacility !== 'All'
+                    ? `?facility=${encodeURIComponent(currentFacility)}`
+                    : '';
+
                 // KPIs
-                const kpiRes = await fetch('/api/analytics/kpi-summary');
+                const kpiRes = await fetch(`/api/analytics/kpi-summary${facParam}`);
                 const kpi = await kpiRes.json();
                 document.getElementById('kpiTotalTickets').innerText = kpi.totalTickets;
                 document.getElementById('kpiPending').innerText = kpi.pendingTickets;
@@ -634,7 +703,7 @@
                 document.getElementById('kpiAvgHours').innerText = `${kpi.averageResolutionHours}h`;
 
                 // Dept Chart
-                const deptRes = await fetch('/api/analytics/by-department');
+                const deptRes = await fetch(`/api/analytics/by-department${facParam}`);
                 const deptData = await deptRes.json();
                 const deptCtx = document.getElementById('deptChart')?.getContext('2d');
                 if (deptCtx) {
@@ -660,7 +729,7 @@
                 }
 
                 // Status Chart
-                const statusRes = await fetch('/api/analytics/by-status');
+                const statusRes = await fetch(`/api/analytics/by-status${facParam}`);
                 const statusData = await statusRes.json();
                 const statusCtx = document.getElementById('statusChart')?.getContext('2d');
                 if (statusCtx) {
@@ -683,7 +752,7 @@
                 }
 
                 // Rankings Table
-                const rankRes = await fetch('/api/analytics/technician-rankings');
+                const rankRes = await fetch(`/api/analytics/technician-rankings${facParam}`);
                 const rankings = await rankRes.json();
                 const tbody = document.getElementById('rankingTableBody');
                 if (tbody) {
@@ -703,7 +772,7 @@
             }
         }
 
-        // --- 12. Notification Center ---
+        // --- 13. Notification Center ---
         async function fetchNotifications() {
             try {
                 const res = await fetch('/api/assignment/notifications?limit=20');
@@ -741,6 +810,7 @@
 
         // Initial Load on page ready
         document.addEventListener('DOMContentLoaded', () => {
+            loadFacilitiesList();
             refreshAll();
         });
     </script>

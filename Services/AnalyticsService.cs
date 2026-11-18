@@ -18,16 +18,29 @@ public class AnalyticsService : IAnalyticsService
         _context = context;
     }
 
-    public async Task<KpiSummaryDto> GetKpiSummaryAsync()
+    private IQueryable<MaintenanceTicket> FilterTickets(string? facility)
     {
-        var totalTickets = await _context.MaintenanceTickets.CountAsync();
-        var pendingTickets = await _context.MaintenanceTickets.CountAsync(t => t.Status == TicketStatus.Pending);
-        var inProgressTickets = await _context.MaintenanceTickets.CountAsync(t => t.Status == TicketStatus.InProgress || t.Status == TicketStatus.Assigned);
-        var resolvedTickets = await _context.MaintenanceTickets.CountAsync(t => t.Status == TicketStatus.Resolved || t.Status == TicketStatus.Closed);
+        var query = _context.MaintenanceTickets.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase))
+        {
+            var fac = facility.Trim().ToLower();
+            query = query.Where(t => t.Department.ToLower().Contains(fac));
+        }
+        return query;
+    }
+
+    public async Task<KpiSummaryDto> GetKpiSummaryAsync(string? facility = null)
+    {
+        var query = FilterTickets(facility);
+
+        var totalTickets = await query.CountAsync();
+        var pendingTickets = await query.CountAsync(t => t.Status == TicketStatus.Pending);
+        var inProgressTickets = await query.CountAsync(t => t.Status == TicketStatus.InProgress || t.Status == TicketStatus.Assigned);
+        var resolvedTickets = await query.CountAsync(t => t.Status == TicketStatus.Resolved || t.Status == TicketStatus.Closed);
         var totalTechnicians = await _context.TechnicianProfiles.CountAsync();
 
         // حساب متوسط وقت الحل للتذاكر المنجزة بالساعات
-        var resolvedList = await _context.MaintenanceTickets
+        var resolvedList = await query
             .Where(t => t.ResolvedAt != null)
             .Select(t => new { t.CreatedAt, ResolvedAt = t.ResolvedAt!.Value })
             .ToListAsync();
@@ -49,9 +62,11 @@ public class AnalyticsService : IAnalyticsService
         };
     }
 
-    public async Task<List<DepartmentBreakdownDto>> GetTicketsByDepartmentAsync()
+    public async Task<List<DepartmentBreakdownDto>> GetTicketsByDepartmentAsync(string? facility = null)
     {
-        return await _context.MaintenanceTickets
+        var query = FilterTickets(facility);
+
+        return await query
             .GroupBy(t => t.Department)
             .Select(g => new DepartmentBreakdownDto
             {
@@ -62,9 +77,11 @@ public class AnalyticsService : IAnalyticsService
             .ToListAsync();
     }
 
-    public async Task<List<StatusBreakdownDto>> GetTicketsByStatusAsync()
+    public async Task<List<StatusBreakdownDto>> GetTicketsByStatusAsync(string? facility = null)
     {
-        return await _context.MaintenanceTickets
+        var query = FilterTickets(facility);
+
+        return await query
             .GroupBy(t => t.Status)
             .Select(g => new StatusBreakdownDto
             {
@@ -74,7 +91,7 @@ public class AnalyticsService : IAnalyticsService
             .ToListAsync();
     }
 
-    public async Task<List<TechnicianRankingDto>> GetTechnicianRankingsAsync()
+    public async Task<List<TechnicianRankingDto>> GetTechnicianRankingsAsync(string? facility = null)
     {
         var technicians = await _context.TechnicianProfiles
             .Include(tp => tp.User)
@@ -85,10 +102,20 @@ public class AnalyticsService : IAnalyticsService
             .ToListAsync();
 
         var result = new List<TechnicianRankingDto>();
+        var fac = !string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase)
+            ? facility.Trim().ToLower()
+            : null;
 
         foreach (var tech in technicians)
         {
-            var completedAssignments = tech.Assignments
+            var assignments = tech.Assignments.AsEnumerable();
+            if (fac != null)
+            {
+                assignments = assignments.Where(a => a.Ticket != null && a.Ticket.Department.ToLower().Contains(fac));
+            }
+
+            var assignmentList = assignments.ToList();
+            var completedAssignments = assignmentList
                 .Where(a => a.Status == "Completed" && a.Ticket != null && a.Ticket.ResolvedAt != null)
                 .ToList();
 
@@ -111,7 +138,7 @@ public class AnalyticsService : IAnalyticsService
                 Specialization = specNames,
                 Rating = tech.Rating,
                 CompletedTickets = completedAssignments.Count,
-                ActiveTickets = tech.Assignments.Count(a => a.Status == "Active"),
+                ActiveTickets = assignmentList.Count(a => a.Status == "Active"),
                 AvgResolutionHours = avgHours
             });
         }
@@ -122,9 +149,11 @@ public class AnalyticsService : IAnalyticsService
             .ToList();
     }
 
-    public async Task<byte[]> GenerateCsvReportAsync()
+    public async Task<byte[]> GenerateCsvReportAsync(string? facility = null)
     {
-        var tickets = await _context.MaintenanceTickets
+        var query = FilterTickets(facility);
+
+        var tickets = await query
             .Include(t => t.Assignments)
                 .ThenInclude(a => a.Technician)
                     .ThenInclude(tp => tp!.User)
@@ -132,7 +161,7 @@ public class AnalyticsService : IAnalyticsService
             .ToListAsync();
 
         var sb = new StringBuilder();
-        sb.AppendLine("TicketId,Title,Department,RequiredSkill,Priority,Status,CreatedAt,ResolvedAt,DurationHours,AssignedTechnician");
+        sb.AppendLine("TicketId,Title,Facility_Department,RequiredSkill,Priority,Status,CreatedAt,ResolvedAt,DurationHours,AssignedTechnician");
 
         foreach (var t in tickets)
         {
@@ -147,11 +176,15 @@ public class AnalyticsService : IAnalyticsService
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 
-    public async Task<byte[]> GeneratePdfReportAsync()
+    public async Task<byte[]> GeneratePdfReportAsync(string? facility = null)
     {
-        var kpi = await GetKpiSummaryAsync();
-        var deptData = await GetTicketsByDepartmentAsync();
-        var techRankings = await GetTechnicianRankingsAsync();
+        var kpi = await GetKpiSummaryAsync(facility);
+        var deptData = await GetTicketsByDepartmentAsync(facility);
+        var techRankings = await GetTechnicianRankingsAsync(facility);
+
+        var facilityLabel = !string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase)
+            ? $"Facility: {facility}"
+            : "All Facilities & Organizations";
 
         var document = Document.Create(container =>
         {
@@ -169,13 +202,13 @@ public class AnalyticsService : IAnalyticsService
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text("Fixawyy Maintenance Platform").FontSize(20).Bold().FontColor(Colors.Blue.Darken3);
-                            c.Item().Text("Executive Operations, Dispatcher & Analytics Report").FontSize(11).FontColor(Colors.Grey.Medium);
+                            c.Item().Text($"Executive Operations & Analytics Report — {facilityLabel}").FontSize(11).FontColor(Colors.Grey.Medium);
                         });
 
                         row.ConstantItem(150).Column(c =>
                         {
                             c.Item().AlignRight().Text($"Date: {DateTime.UtcNow:yyyy-MM-dd}").FontSize(9);
-                            c.Item().AlignRight().Text("Confidential - Operations").FontSize(9).FontColor(Colors.Grey.Medium);
+                            c.Item().AlignRight().Text("Facility Admin Confidential").FontSize(9).FontColor(Colors.Grey.Medium);
                         });
                     });
 
@@ -213,7 +246,7 @@ public class AnalyticsService : IAnalyticsService
                     });
 
                     // Department breakdown table
-                    col.Item().Text("Incidents Distribution by Department").FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
+                    col.Item().Text("Incidents Distribution by Location / Facility").FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
                     col.Item().PaddingTop(4).PaddingBottom(15).Table(table =>
                     {
                         table.ColumnsDefinition(cols =>
@@ -224,7 +257,7 @@ public class AnalyticsService : IAnalyticsService
 
                         table.Header(h =>
                         {
-                            h.Cell().Background(Colors.Grey.Lighten3).Padding(5).Text("Department").Bold();
+                            h.Cell().Background(Colors.Grey.Lighten3).Padding(5).Text("Facility / Location").Bold();
                             h.Cell().Background(Colors.Grey.Lighten3).Padding(5).AlignRight().Text("Ticket Count").Bold();
                         });
 

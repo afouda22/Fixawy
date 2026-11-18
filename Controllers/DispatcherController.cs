@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Fixawyy.Controllers;
 
-[Authorize(Roles = AppRoles.OperationsAuthorizedRoles)]
+[Authorize(Roles = AppRoles.DispatcherAuthorizedRoles)]
 public class DispatcherController : Controller
 {
     public IActionResult Index()
     {
-        ViewData["Title"] = "Operations Dispatcher & Analytics";
+        ViewData["Title"] = "Facility Operations Dispatcher & Analytics";
         return View();
     }
 }

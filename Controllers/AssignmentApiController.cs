@@ -8,7 +8,7 @@ using Fixawyy.Services;
 
 namespace Fixawyy.Controllers;
 
-[Authorize(Roles = AppRoles.OperationsAuthorizedRoles)]
+[Authorize(Roles = AppRoles.DispatcherAuthorizedRoles)]
 [ApiController]
 [Route("api/assignment")]
 public class AssignmentApiController : ControllerBase
@@ -23,9 +23,9 @@ public class AssignmentApiController : ControllerBase
     }
 
     [HttpGet("pending-tickets")]
-    public async Task<ActionResult<List<TicketSummaryDto>>> GetPendingTickets()
+    public async Task<ActionResult<List<TicketSummaryDto>>> GetPendingTickets([FromQuery] string? facility = null)
     {
-        var tickets = await _assignmentService.GetPendingTicketsAsync();
+        var tickets = await _assignmentService.GetPendingTicketsAsync(facility);
         return Ok(tickets);
     }
 
@@ -76,9 +76,9 @@ public class AssignmentApiController : ControllerBase
     }
 
     [HttpGet("active")]
-    public async Task<ActionResult<List<AssignmentResponseDto>>> GetActiveAssignments()
+    public async Task<ActionResult<List<AssignmentResponseDto>>> GetActiveAssignments([FromQuery] string? facility = null)
     {
-        var list = await _assignmentService.GetActiveAssignmentsAsync();
+        var list = await _assignmentService.GetActiveAssignmentsAsync(facility);
         return Ok(list);
     }
 
@@ -89,6 +89,13 @@ public class AssignmentApiController : ControllerBase
         var success = await _assignmentService.ResolveAssignmentAsync(assignmentId);
         if (!success) return NotFound(new { message = $"Assignment {assignmentId} not found." });
         return Ok(new { message = "Assignment marked as completed and ticket resolved." });
+    }
+
+    [HttpGet("facilities")]
+    public async Task<ActionResult<List<string>>> GetFacilities()
+    {
+        var facilities = await _assignmentService.GetFacilitiesAsync();
+        return Ok(facilities);
     }
 
     [HttpGet("notifications")]
