@@ -54,6 +54,11 @@
                                 <i class="bi bi-tools me-1 text-warning"></i>Find Technicians
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-modern" asp-controller="Dispatcher" asp-action="Index">
+                                <i class="bi bi-cpu-fill me-1 text-info"></i>Operations Dispatcher
+                            </a>
+                        </li>
                         @if (SignInManager.IsSignedIn(User))
                         {
                             @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
@@ -81,6 +86,29 @@
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">
+                        <!-- Operations Quick Pill -->
+                        <a asp-controller="Dispatcher" asp-action="Index" class="btn btn-sm btn-outline-warning d-none d-md-flex align-items-center gap-1 rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-lightning-charge-fill"></i> Dispatch Board
+                        </a>
+
+                        <!-- Notification Bell Dropdown -->
+                        <div class="dropdown me-1">
+                            <button class="btn btn-link text-white p-1 position-relative dropdown-toggle shadow-none" type="button" id="navNotificationBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
+                                <i class="bi bi-bell-fill fs-5"></i>
+                                <span id="navNotificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display: none;">
+                                    <span class="visually-hidden">New alerts</span>
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-3 py-2 border-0" aria-labelledby="navNotificationBell" style="width: 320px; max-height: 400px; overflow-y: auto;" id="navNotificationList">
+                                <li class="dropdown-header fw-bold text-uppercase small text-muted d-flex justify-content-between align-items-center">
+                                    <span>Live Notifications</span>
+                                    <span class="badge bg-primary-subtle text-primary small">SignalR</span>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li class="px-3 py-2 text-center text-muted small" id="navNotificationEmpty">No new notifications</li>
+                            </ul>
+                        </div>
+
                         <!-- Dark / Light Mode Toggle Button -->
                         <button id="themeToggleBtn" type="button" class="theme-toggle-btn me-1" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
                             <i id="themeToggleIcon" class="bi bi-moon-stars-fill fs-6"></i>
@@ -157,14 +185,14 @@
             <div class="rounded-circle p-1 d-flex align-items-center justify-content-center bg-white" style="border: 1.5px solid #f5a623;">
                 <img src="~/images/logo-icon.png" alt="Fixawyy" style="width: 20px; height: 20px; object-fit: contain;" />
             </div>
-            <span>Fixawyy Platform &bull; DEPI Graduation Project &bull; Teammate 1 Module (ASP.NET Core MVC &amp; Entity Framework)</span>
+            <span>Fixawyy Platform &bull; DEPI Graduation Project &bull; Teammate 1 &amp; 4 Integrated Module (ASP.NET Core MVC &amp; SignalR Dispatcher)</span>
         </div>
     </footer>
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Theme Toggle Logic Script -->
+    <!-- Theme Toggle & Header Bell Logic Script -->
     <script>
         (function() {
             const toggleBtn = document.getElementById('themeToggleBtn');
@@ -194,6 +222,45 @@
                     syncIcon(targetTheme);
                 });
             }
+
+            // Load quick notifications for bell dropdown
+            async function loadNavNotifications() {
+                try {
+                    const res = await fetch('/api/assignment/notifications?limit=5');
+                    if (!res.ok) return;
+                    const items = await res.json();
+                    const list = document.getElementById('navNotificationList');
+                    const badge = document.getElementById('navNotificationBadge');
+                    if (!list || !items.length) return;
+
+                    if (badge) badge.style.display = 'block';
+
+                    const newContent = items.map(n => `
+                        <li>
+                            <a class="dropdown-item py-2 px-3 border-bottom text-wrap" href="/Dispatcher">
+                                <div class="fw-bold small">${n.title}</div>
+                                <div class="text-secondary" style="font-size: 0.75rem;">${n.message}</div>
+                            </a>
+                        </li>
+                    `).join('');
+
+                    list.innerHTML = `
+                        <li class="dropdown-header fw-bold text-uppercase small text-muted d-flex justify-content-between align-items-center">
+                            <span>Live Notifications</span>
+                            <span class="badge bg-primary-subtle text-primary small">SignalR</span>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        ${newContent}
+                        <li>
+                            <a class="dropdown-item text-center text-primary small fw-bold py-2" href="/Dispatcher">
+                                View Dispatcher Board &rarr;
+                            </a>
+                        </li>
+                    `;
+                } catch(e) {}
+            }
+
+            document.addEventListener('DOMContentLoaded', loadNavNotifications);
         })();
     </script>
 

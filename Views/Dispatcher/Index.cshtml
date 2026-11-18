@@ -1,0 +1,747 @@
+@{
+    ViewData["Title"] = "Operations Dispatcher & Executive Analytics";
+}
+
+<div class="dispatcher-container pb-5">
+    <!-- Header Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 p-4 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 d-flex align-items-center justify-content-center" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4);">
+                <i class="bi bi-cpu-fill fs-2 text-primary"></i>
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="fw-bold mb-0 text-white fs-3">Operations Dispatcher & Analytics</h2>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small rounded-pill">Teammate 4 Engine</span>
+                </div>
+                <p class="text-secondary small mb-0 mt-1">Smart matchmaking algorithm, real-time SignalR push notifications, and executive KPIs.</p>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <!-- SignalR Connection Status Pill -->
+            <div id="connectionBadge" class="badge rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <span class="spinner-grow spinner-grow-sm" role="status" style="width: 8px; height: 8px;"></span>
+                <span>SignalR Live</span>
+            </div>
+
+            <!-- PDF & CSV Quick Export -->
+            <a href="/api/analytics/export/csv" class="btn btn-outline-light btn-sm rounded-3 d-flex align-items-center gap-1">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </a>
+            <a href="/api/analytics/export/pdf" target="_blank" class="btn btn-primary btn-sm rounded-3 d-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Executive PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Pills / Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2 p-1.5 rounded-3 border bg-body-tertiary" id="dispatcherTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-2 fw-bold d-flex align-items-center gap-2" id="dispatch-tab" data-bs-toggle="pill" data-bs-target="#tab-dispatch" type="button" role="tab">
+                <i class="bi bi-kanban"></i> Dispatch Board
+                <span id="pendingBadgeNav" class="badge bg-warning text-dark rounded-pill">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-2 fw-bold d-flex align-items-center gap-2" id="analytics-tab" data-bs-toggle="pill" data-bs-target="#tab-analytics" type="button" role="tab">
+                <i class="bi bi-bar-chart-line-fill"></i> Executive Analytics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-2 fw-bold d-flex align-items-center gap-2" id="notifications-tab" data-bs-toggle="pill" data-bs-target="#tab-notifications" type="button" role="tab">
+                <i class="bi bi-bell-fill"></i> Notification Stream
+                <span id="unreadBadgeNav" class="badge bg-danger rounded-pill d-none">0</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="dispatcherTabContent">
+
+        <!-- TAB 1: DISPATCH BOARD -->
+        <div class="tab-pane fade show active" id="tab-dispatch" role="tabpanel">
+            <div class="row g-4">
+
+                <!-- Left Column: Pending Tickets Queue (7 Cols) -->
+                <div class="col-lg-7">
+                    <div class="card border rounded-4 shadow-sm mb-4">
+                        <div class="card-header bg-body d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="p-1 rounded-circle bg-warning"></span>
+                                <h5 class="fw-bold mb-0 fs-6">Pending Tickets Awaiting Dispatch</h5>
+                            </div>
+                            <button onclick="refreshAll()" class="btn btn-sm btn-outline-secondary rounded-3 d-flex align-items-center gap-1">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body p-3">
+                            <div id="pendingTicketsList" class="d-flex flex-column gap-3">
+                                <div class="text-center py-5 text-secondary">
+                                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                                    <div>Loading pending tickets...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Active Jobs & Available Technicians (5 Cols) -->
+                <div class="col-lg-5">
+                    
+                    <!-- Active Dispatched Jobs -->
+                    <div class="card border rounded-4 shadow-sm mb-4">
+                        <div class="card-header bg-body d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="p-1 rounded-circle bg-success"></span>
+                                <h5 class="fw-bold mb-0 fs-6">Active Dispatched Operations</h5>
+                            </div>
+                            <span id="activeJobsCount" class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1">0 Active</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <div id="activeAssignmentsList" class="d-flex flex-column gap-2" style="max-height: 320px; overflow-y: auto;">
+                                <div class="text-center py-4 text-secondary small">No active assignments</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Available Technicians Roster (Drag-and-Drop Zone) -->
+                    <div class="card border rounded-4 shadow-sm">
+                        <div class="card-header bg-body d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-people text-primary"></i>
+                                <h5 class="fw-bold mb-0 fs-6">Technicians & Workload (Drop Target)</h5>
+                            </div>
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill small">Drag ticket here</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <div id="techniciansDropList" class="d-flex flex-column gap-2" style="max-height: 380px; overflow-y: auto;">
+                                <div class="text-center py-4 text-secondary small">Loading technicians roster...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 2: EXECUTIVE ANALYTICS -->
+        <div class="tab-pane fade" id="tab-analytics" role="tabpanel">
+            
+            <!-- KPI Metric Cards Grid -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card border rounded-4 shadow-sm h-100 p-3">
+                        <span class="text-secondary small fw-bold text-uppercase">Total Incidents</span>
+                        <h3 id="kpiTotalTickets" class="fw-extrabold text-primary my-1">--</h3>
+                        <span class="text-secondary small">All recorded tickets</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card border rounded-4 shadow-sm h-100 p-3">
+                        <span class="text-warning small fw-bold text-uppercase">Pending Dispatch</span>
+                        <h3 id="kpiPending" class="fw-extrabold text-warning my-1">--</h3>
+                        <span class="text-secondary small">Queue backlog</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="card border rounded-4 shadow-sm h-100 p-3">
+                        <span class="text-info small fw-bold text-uppercase">In Progress</span>
+                        <h3 id="kpiInProgress" class="fw-extrabold text-info my-1">--</h3>
+                        <span class="text-secondary small">Active assignments</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-6 col-xl">
+                    <div class="card border rounded-4 shadow-sm h-100 p-3">
+                        <span class="text-success small fw-bold text-uppercase">Resolved</span>
+                        <h3 id="kpiResolved" class="fw-extrabold text-success my-1">--</h3>
+                        <span class="text-secondary small">Completed tickets</span>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl">
+                    <div class="card border rounded-4 shadow-sm h-100 p-3">
+                        <span class="text-purple small fw-bold text-uppercase" style="color: #8b5cf6;">Avg Resolution</span>
+                        <h3 id="kpiAvgHours" class="fw-extrabold my-1" style="color: #8b5cf6;">--</h3>
+                        <span class="text-secondary small">Mean hours to closure</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-7">
+                    <div class="card border rounded-4 shadow-sm h-100 p-4">
+                        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-bar-chart-fill text-primary"></i> Incidents by Department / Facility
+                        </h5>
+                        <div style="position: relative; height: 280px;">
+                            <canvas id="deptChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card border rounded-4 shadow-sm h-100 p-4">
+                        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-pie-chart-fill text-indigo" style="color: #6366f1;"></i> Status Distribution
+                        </h5>
+                        <div style="position: relative; height: 280px;" class="d-flex align-items-center justify-content-center">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technician Performance Rankings Table -->
+            <div class="card border rounded-4 shadow-sm p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-trophy-fill text-warning"></i> Technician Efficiency Ranking
+                    </h5>
+                    <span class="badge bg-body-secondary text-secondary">Updated real-time</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Technician</th>
+                                <th>Specialization</th>
+                                <th>Rating</th>
+                                <th>Completed</th>
+                                <th>Active Jobs</th>
+                                <th>Avg Speed</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBody">
+                            <tr><td colspan="6" class="text-center py-4 text-secondary">Loading performance data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 3: NOTIFICATION STREAM -->
+        <div class="tab-pane fade" id="tab-notifications" role="tabpanel">
+            <div class="card border rounded-4 shadow-sm">
+                <div class="card-header bg-body d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-bell-fill text-primary"></i> Real-Time Notifications History
+                    </h5>
+                    <button onclick="fetchNotifications()" class="btn btn-sm btn-outline-secondary rounded-3">
+                        Refresh Stream
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="fullNotificationList" class="list-group list-group-flush">
+                        <div class="text-center py-5 text-secondary">Loading notification stream...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Smart Suggestions -->
+<div class="modal fade" id="smartSuggestModal" tabindex="-1" aria-labelledby="suggestModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-3 p-2 bg-primary-subtle text-primary">
+                        <i class="bi bi-lightbulb-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold" id="suggestModalTitle">AI Smart Match Candidates</h5>
+                        <p class="text-secondary small mb-0" id="suggestModalSubtitle">Evaluating technician compatibility score...</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="modalCandidatesContainer" class="d-flex flex-column gap-3">
+                    <div class="text-center py-4 text-secondary">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="mt-2">Computing matchmaking scores...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2">
+                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container for Real-time SignalR Alerts -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;" id="liveToastContainer"></div>
+
+@section Scripts {
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Microsoft SignalR CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <script>
+        // --- 1. SignalR Live Hub Connection ---
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/notifications")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("NewAssignment", (data) => {
+            showToast("🚀 New Assignment Dispatched", `Ticket '${data.ticketTitle}' assigned to ${data.technicianName} (Score: ${data.matchScore}%)`, "success");
+            refreshAll();
+        });
+
+        connection.on("StatusChanged", (data) => {
+            showToast("🔄 Ticket Status Updated", `Ticket #${data.ticketId} status changed to ${data.newStatus}`, "info");
+            refreshAll();
+        });
+
+        connection.on("NewNotification", (data) => {
+            showToast(data.title, data.message, "primary");
+            fetchNotifications();
+        });
+
+        connection.start()
+            .then(() => {
+                console.log("Connected to Fixawyy SignalR Hub.");
+                const badge = document.getElementById("connectionBadge");
+                if (badge) {
+                    badge.innerHTML = `<span class="spinner-grow spinner-grow-sm" role="status" style="width: 8px; height: 8px;"></span><span>SignalR Live</span>`;
+                    badge.style.background = "rgba(16, 185, 129, 0.15)";
+                    badge.style.color = "#10b981";
+                    badge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                }
+            })
+            .catch(err => {
+                console.error("SignalR Connection Error:", err);
+                const badge = document.getElementById("connectionBadge");
+                if (badge) {
+                    badge.innerHTML = `<i class="bi bi-exclamation-circle-fill"></i><span>Offline</span>`;
+                    badge.style.background = "rgba(239, 68, 68, 0.15)";
+                    badge.style.color = "#ef4444";
+                    badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                }
+            });
+
+        // --- 2. Live Toast Alerts ---
+        function showToast(title, message, theme = "primary") {
+            const container = document.getElementById("liveToastContainer");
+            if (!container) return;
+
+            const toastId = "toast_" + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-bg-${theme} border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <strong class="d-block mb-1">${title}</strong>
+                            <div class="small">${message}</div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML("beforeend", toastHtml);
+            const toastEl = document.getElementById(toastId);
+            const bsToast = new bootstrap.Toast(toastEl, { delay: 5000 });
+            bsToast.show();
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        }
+
+        // --- 3. Refresh All Boards ---
+        function refreshAll() {
+            loadPendingTickets();
+            loadActiveAssignments();
+            loadTechniciansDropList();
+            loadAnalyticsData();
+            fetchNotifications();
+        }
+
+        // --- 4. Load Pending Tickets ---
+        async function loadPendingTickets() {
+            try {
+                const res = await fetch('/api/assignment/pending-tickets');
+                const tickets = await res.json();
+                const list = document.getElementById('pendingTicketsList');
+                const badgeNav = document.getElementById('pendingBadgeNav');
+                if (badgeNav) badgeNav.innerText = tickets.length;
+
+                if (tickets.length === 0) {
+                    list.innerHTML = `
+                        <div class="p-5 text-center text-secondary border rounded-3 bg-light">
+                            <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
+                            <h6 class="fw-bold">All caught up!</h6>
+                            <p class="small text-secondary mb-0">No pending tickets awaiting assignment.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const priorityBadgeClass = {
+                    Critical: 'bg-danger text-white',
+                    High: 'bg-warning text-dark',
+                    Medium: 'bg-info text-dark',
+                    Low: 'bg-secondary text-white'
+                };
+
+                list.innerHTML = tickets.map(t => `
+                    <div draggable="true" ondragstart="handleDragStart(event, ${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="card border rounded-3 shadow-sm p-3 hover-shadow transition-all" style="cursor: grab;">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <div class="space-y-1">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="badge ${priorityBadgeClass[t.priority] || 'bg-secondary'} rounded-pill px-2.5">${t.priority}</span>
+                                    <span class="badge bg-body-secondary text-secondary rounded-pill px-2.5"><i class="bi bi-tools me-1"></i>${t.requiredSkill}</span>
+                                    <span class="text-secondary small"><i class="bi bi-geo-alt me-1"></i>${t.department}</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle small"><i class="bi bi-hand-index-thumb me-1"></i>Drag to Tech</span>
+                                </div>
+                                <h6 class="fw-bold mb-1">${t.title}</h6>
+                                <p class="text-secondary small mb-0">${t.description}</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 align-self-end align-self-md-center">
+                                <button onclick="openSmartSuggest(${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="btn btn-sm btn-outline-primary rounded-3 d-flex align-items-center gap-1">
+                                    <i class="bi bi-lightbulb"></i> Match
+                                </button>
+                                <button onclick="triggerAutoAssign(${t.id})" class="btn btn-sm btn-primary rounded-3 d-flex align-items-center gap-1 shadow-sm">
+                                    <i class="bi bi-lightning-charge-fill"></i> Auto Assign
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Error loading pending tickets:", err);
+            }
+        }
+
+        // --- 5. Load Active Dispatched Jobs ---
+        async function loadActiveAssignments() {
+            try {
+                const res = await fetch('/api/assignment/active');
+                const assignments = await res.json();
+                const list = document.getElementById('activeAssignmentsList');
+                const countBadge = document.getElementById('activeJobsCount');
+                if (countBadge) countBadge.innerText = `${assignments.length} Active`;
+
+                if (assignments.length === 0) {
+                    list.innerHTML = `<div class="text-center py-4 text-secondary small">No active dispatched operations</div>`;
+                    return;
+                }
+
+                list.innerHTML = assignments.map(a => `
+                    <div class="p-3 rounded-3 border bg-body-secondary-subtle">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold small mb-0 text-truncate" style="max-width: 220px;" title="${a.ticketTitle}">${a.ticketTitle}</h6>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">${a.matchScore}% Match</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center text-secondary small mt-2">
+                            <span><i class="bi bi-person-circle me-1"></i>${a.technicianName}</span>
+                            <button onclick="resolveAssignment(${a.assignmentId})" class="btn btn-xs btn-success rounded-2 px-2 py-1 small fw-bold d-flex align-items-center gap-1">
+                                <i class="bi bi-check2"></i> Complete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Error loading active assignments:", err);
+            }
+        }
+
+        // --- 6. Technicians Drop Target List ---
+        async function loadTechniciansDropList() {
+            try {
+                const res = await fetch('/api/analytics/technician-rankings');
+                const techs = await res.json();
+                const list = document.getElementById('techniciansDropList');
+
+                list.innerHTML = techs.map(t => `
+                    <div ondragover="handleDragOver(event, this)" ondragleave="handleDragLeave(this)" ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName}')" class="p-2.5 rounded-3 border d-flex justify-content-between align-items-center transition-all bg-body" style="transition: all 0.2s ease;">
+                        <div>
+                            <div class="fw-bold small text-truncate" style="max-width: 200px;">${t.fullName}</div>
+                            <div class="text-secondary" style="font-size: 0.72rem;">${t.specialization} &bull; <span class="text-warning">★ ${t.rating.toFixed(1)}</span></div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${t.activeTickets > 0 ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success'} rounded-pill" style="font-size: 0.7rem;">
+                                ${t.activeTickets} Active
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-arrow-down-circle"></i> Drop</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Error loading technicians list:", err);
+            }
+        }
+
+        // --- 7. HTML5 Drag and Drop ---
+        let draggedTicketId = null;
+        let draggedTicketTitle = "";
+
+        function handleDragStart(e, ticketId, title) {
+            draggedTicketId = ticketId;
+            draggedTicketTitle = title;
+            e.dataTransfer.setData("text/plain", ticketId);
+            e.dataTransfer.effectAllowed = "move";
+        }
+
+        function handleDragOver(e, el) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            el.classList.add("border-primary", "bg-primary-subtle");
+        }
+
+        function handleDragLeave(el) {
+            el.classList.remove("border-primary", "bg-primary-subtle");
+        }
+
+        async function handleDrop(e, techId, techName) {
+            e.preventDefault();
+            const el = e.currentTarget;
+            el.classList.remove("border-primary", "bg-primary-subtle");
+
+            const ticketId = draggedTicketId || e.dataTransfer.getData("text/plain");
+            if (!ticketId) return;
+
+            showToast("🎯 Drag & Drop Dispatched", `Assigning ticket #${ticketId} to ${techName}...`, "primary");
+            await manualAssign(ticketId, techId);
+        }
+
+        // --- 8. Auto & Manual Assign ---
+        async function triggerAutoAssign(ticketId) {
+            try {
+                const res = await fetch(`/api/assignment/auto-assign/${ticketId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("⚡ Auto-Assign Success", `Assigned to ${data.technicianName} with match score ${data.matchScore}%`, "success");
+                    refreshAll();
+                } else {
+                    showToast("Auto-Assign Notice", data.message, "danger");
+                }
+            } catch (err) {
+                console.error("Auto assign error:", err);
+            }
+        }
+
+        async function manualAssign(ticketId, technicianId) {
+            try {
+                const res = await fetch('/api/assignment/manual-assign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticketId, technicianId })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("✅ Manual Assign Success", `Assigned to ${data.technicianName}`, "success");
+                    const modalEl = document.getElementById('smartSuggestModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    refreshAll();
+                } else {
+                    showToast("Manual Assign Notice", data.message, "danger");
+                }
+            } catch (err) {
+                console.error("Manual assign error:", err);
+            }
+        }
+
+        // --- 9. Resolve Assignment ---
+        async function resolveAssignment(assignmentId) {
+            try {
+                const res = await fetch(`/api/assignment/resolve/${assignmentId}`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("🎉 Incident Resolved", "Ticket marked as completed and closed.", "success");
+                    refreshAll();
+                } else {
+                    showToast("Error", data.message, "danger");
+                }
+            } catch (err) {
+                console.error("Resolve error:", err);
+            }
+        }
+
+        // --- 10. Smart Suggest Modal ---
+        async function openSmartSuggest(ticketId, ticketTitle) {
+            document.getElementById('suggestModalTitle').innerText = ticketTitle;
+            document.getElementById('suggestModalSubtitle').innerText = `Smart matchmaking recommendation for Ticket #${ticketId}`;
+            const container = document.getElementById('modalCandidatesContainer');
+            container.innerHTML = `
+                <div class="text-center py-4 text-secondary">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-2">Computing matchmaking scores...</div>
+                </div>
+            `;
+            const modal = new bootstrap.Modal(document.getElementById('smartSuggestModal'));
+            modal.show();
+
+            try {
+                const res = await fetch(`/api/assignment/suggestions/${ticketId}`);
+                const candidates = await res.json();
+
+                if (candidates.length === 0) {
+                    container.innerHTML = `<div class="p-4 text-center text-secondary">No suitable technicians available for this skill.</div>`;
+                    return;
+                }
+
+                container.innerHTML = candidates.map(c => `
+                    <div class="p-3 rounded-3 border ${c.isRecommended ? 'border-primary bg-primary-subtle' : 'bg-body'}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="fw-bold mb-0">${c.fullName}</h6>
+                                <span class="badge bg-secondary-subtle text-secondary small">${c.specialization}</span>
+                                ${c.isRecommended ? '<span class="badge bg-primary text-white">⭐ Top Match</span>' : ''}
+                            </div>
+                            <span class="fw-bold text-primary fs-5">${c.matchScore}%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: ${c.matchScore}%"></div>
+                        </div>
+                        <div class="small text-secondary mb-3">
+                            ${c.matchReasons.map(r => `<div>&bull; ${r}</div>`).join('')}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-secondary small">Active assignments: ${c.activeTicketsCount}</span>
+                            <button onclick="manualAssign(${ticketId}, ${c.technicianId})" class="btn btn-sm btn-primary rounded-3 px-3">
+                                Assign ${c.fullName}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Error fetching suggestions:", err);
+            }
+        }
+
+        // --- 11. Load Executive Analytics ---
+        let deptChart = null;
+        let statusChart = null;
+
+        async function loadAnalyticsData() {
+            try {
+                // KPIs
+                const kpiRes = await fetch('/api/analytics/kpi-summary');
+                const kpi = await kpiRes.json();
+                document.getElementById('kpiTotalTickets').innerText = kpi.totalTickets;
+                document.getElementById('kpiPending').innerText = kpi.pendingTickets;
+                document.getElementById('kpiInProgress').innerText = kpi.inProgressTickets;
+                document.getElementById('kpiResolved').innerText = kpi.resolvedTickets;
+                document.getElementById('kpiAvgHours').innerText = `${kpi.averageResolutionHours}h`;
+
+                // Dept Chart
+                const deptRes = await fetch('/api/analytics/by-department');
+                const deptData = await deptRes.json();
+                const deptCtx = document.getElementById('deptChart')?.getContext('2d');
+                if (deptCtx) {
+                    if (deptChart) deptChart.destroy();
+                    deptChart = new Chart(deptCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: deptData.map(d => d.department),
+                            datasets: [{
+                                label: 'Tickets',
+                                data: deptData.map(d => d.ticketCount),
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                }
+
+                // Status Chart
+                const statusRes = await fetch('/api/analytics/by-status');
+                const statusData = await statusRes.json();
+                const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+                if (statusCtx) {
+                    if (statusChart) statusChart.destroy();
+                    statusChart = new Chart(statusCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: statusData.map(s => s.status),
+                            datasets: [{
+                                data: statusData.map(s => s.ticketCount),
+                                backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#6366f1', '#64748b']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'bottom' } }
+                        }
+                    });
+                }
+
+                // Rankings Table
+                const rankRes = await fetch('/api/analytics/technician-rankings');
+                const rankings = await rankRes.json();
+                const tbody = document.getElementById('rankingTableBody');
+                if (tbody) {
+                    tbody.innerHTML = rankings.map(t => `
+                        <tr>
+                            <td class="fw-bold">${t.fullName}</td>
+                            <td><span class="badge bg-body-secondary text-secondary">${t.specialization}</span></td>
+                            <td><span class="text-warning fw-bold">★ ${t.rating.toFixed(1)}</span></td>
+                            <td><span class="badge bg-success-subtle text-success">${t.completedTickets} closed</span></td>
+                            <td><span class="badge ${t.activeTickets > 0 ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary'}">${t.activeTickets}</span></td>
+                            <td class="text-secondary">${t.avgResolutionHours} hrs</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error("Error loading analytics:", err);
+            }
+        }
+
+        // --- 12. Notification Center ---
+        async function fetchNotifications() {
+            try {
+                const res = await fetch('/api/assignment/notifications?limit=20');
+                const notifs = await res.json();
+                const list = document.getElementById('fullNotificationList');
+                if (!list) return;
+
+                if (notifs.length === 0) {
+                    list.innerHTML = `<div class="text-center py-5 text-secondary">No notification records found.</div>`;
+                    return;
+                }
+
+                const iconMap = {
+                    NewAssignment: 'bi-box-arrow-in-right text-primary',
+                    StatusChanged: 'bi-check-circle-fill text-success',
+                    NewNotification: 'bi-bell-fill text-warning'
+                };
+
+                list.innerHTML = notifs.map(n => `
+                    <div class="list-group-item p-3 d-flex align-items-center gap-3">
+                        <i class="bi ${iconMap[n.eventType] || 'bi-info-circle text-primary'} fs-4"></i>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0">${n.title}</h6>
+                                <small class="text-secondary">${new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                            </div>
+                            <p class="text-secondary small mb-0 mt-1">${n.message}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Error fetching notifications:", err);
+            }
+        }
+
+        // Initial Load on page ready
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAll();
+        });
+    </script>
+}

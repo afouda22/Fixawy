@@ -1,6 +1,6 @@
-using SmartMaintenance.Dispatcher.DTOs;
+using Fixawyy.DTOs;
 
-namespace SmartMaintenance.Dispatcher.Services;
+namespace Fixawyy.Services;
 
 public interface ITechnicianAssignmentService
 {

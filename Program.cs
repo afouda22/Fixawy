@@ -1,13 +1,19 @@
 using Fixawyy.Context;
+using Fixawyy.Hubs;
 using Fixawyy.Models;
 using Fixawyy.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
+
+// Set QuestPDF Community License
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add MVC Controllers with Views
+// 1. Add MVC Controllers with Views & SignalR
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();
 
 // 2. Configure Database Context
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -43,6 +49,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITechnicianService, TechnicianService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Register Teammate 4 Services (Dispatcher Engine & Executive Analytics)
+builder.Services.AddScoped<ITechnicianAssignmentService, TechnicianAssignmentService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 var app = builder.Build();
 
@@ -81,8 +91,12 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 8. Endpoints Mapping
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Map SignalR Real-Time Notification Hub
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

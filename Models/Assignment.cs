@@ -1,14 +1,14 @@
-﻿namespace SmartMaintenance.Dispatcher.Models;
+namespace Fixawyy.Models;
 
 public class Assignment
 {
     public int Id { get; set; }
 
     public int TicketId { get; set; }
-    public MaintenanceTicket? Ticket { get; set; }
+    public virtual MaintenanceTicket? Ticket { get; set; }
 
-    public int TechnicianId { get; set; }
-    public Technician? Technician { get; set; }
+    public int TechnicianProfileId { get; set; }
+    public virtual TechnicianProfile? Technician { get; set; }
 
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }

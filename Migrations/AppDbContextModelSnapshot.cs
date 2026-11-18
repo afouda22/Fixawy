@@ -125,6 +125,132 @@ namespace Fixawyy.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.Assignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("MatchScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TechnicianProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TechnicianProfileId");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("Assignments");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.MaintenanceTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequiredSkill")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MaintenanceTickets");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.NotificationHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecipientUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RelatedTicketId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TargetRole")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NotificationHistories");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.Specialty", b =>
                 {
                     b.Property<int>("Id")
@@ -368,6 +494,25 @@ namespace Fixawyy.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.Assignment", b =>
+                {
+                    b.HasOne("Fixawyy.Models.TechnicianProfile", "Technician")
+                        .WithMany("Assignments")
+                        .HasForeignKey("TechnicianProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Fixawyy.Models.MaintenanceTicket", "Ticket")
+                        .WithMany("Assignments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Technician");
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.TechnicianProfile", b =>
                 {
                     b.HasOne("Fixawyy.Models.ApplicationUser", "User")
@@ -465,6 +610,11 @@ namespace Fixawyy.Migrations
                     b.Navigation("TechnicianProfile");
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.MaintenanceTicket", b =>
+                {
+                    b.Navigation("Assignments");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.Specialty", b =>
                 {
                     b.Navigation("TechnicianSpecialties");
@@ -472,6 +622,8 @@ namespace Fixawyy.Migrations
 
             modelBuilder.Entity("Fixawyy.Models.TechnicianProfile", b =>
                 {
+                    b.Navigation("Assignments");
+
                     b.Navigation("Schedules");
 
                     b.Navigation("TechnicianSpecialties");
