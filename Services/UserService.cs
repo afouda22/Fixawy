@@ -66,13 +66,7 @@ public class UserService : IUserService
             });
         }
 
-        var facilities = await _context.MaintenanceTickets
-            .AsNoTracking()
-            .Select(t => t.Department)
-            .Where(d => !string.IsNullOrEmpty(d))
-            .Distinct()
-            .OrderBy(d => d)
-            .ToListAsync();
+        var facilities = AppFacilities.All.ToList();
 
         return new UserManagementViewModel
         {

@@ -509,12 +509,6 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<List<string>> GetFacilitiesAsync()
     {
-        return await _context.MaintenanceTickets
-            .AsNoTracking()
-            .Select(t => t.Department)
-            .Where(d => !string.IsNullOrEmpty(d))
-            .Distinct()
-            .OrderBy(d => d)
-            .ToListAsync();
+        return await Task.FromResult(AppFacilities.All.ToList());
     }
 }
