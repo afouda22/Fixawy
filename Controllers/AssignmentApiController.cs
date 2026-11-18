@@ -63,6 +63,10 @@ public class AssignmentApiController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("auto-assign/{ticketId:int}")]
@@ -94,6 +98,10 @@ public class AssignmentApiController : ControllerBase
         catch (ArgumentException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 

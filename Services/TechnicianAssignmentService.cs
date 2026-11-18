@@ -47,6 +47,52 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             .ToListAsync();
     }
 
+    public static bool IsSpecialtyMatch(string? requiredSkill, IEnumerable<string> technicianSpecialties)
+    {
+        if (string.IsNullOrWhiteSpace(requiredSkill)) return true;
+        var req = requiredSkill.Trim().ToLower();
+
+        return technicianSpecialties.Any(spec =>
+        {
+            if (string.IsNullOrWhiteSpace(spec)) return false;
+            var s = spec.Trim().ToLower();
+
+            if (s.Contains(req) || req.Contains(s)) return true;
+
+            // AC / HVAC keywords
+            bool reqIsHvac = req.Contains("ac") || req.Contains("air") || req.Contains("hvac") || req.Contains("cool") || req.Contains("heat");
+            bool specIsHvac = s.Contains("ac") || s.Contains("air") || s.Contains("hvac") || s.Contains("cool") || s.Contains("heat");
+            if (reqIsHvac && specIsHvac) return true;
+
+            // Electric / Power keywords
+            bool reqIsElec = req.Contains("electr") || req.Contains("power") || req.Contains("circuit") || req.Contains("wire") || req.Contains("lighting");
+            bool specIsElec = s.Contains("electr") || s.Contains("power") || s.Contains("circuit") || s.Contains("wire") || s.Contains("lighting");
+            if (reqIsElec && specIsElec) return true;
+
+            // Plumbing / Pipe / Water keywords
+            bool reqIsPlumb = req.Contains("plumb") || req.Contains("pipe") || req.Contains("leak") || req.Contains("drain") || req.Contains("water") || req.Contains("sanitary");
+            bool specIsPlumb = s.Contains("plumb") || s.Contains("pipe") || s.Contains("leak") || s.Contains("drain") || s.Contains("water") || s.Contains("sanitary");
+            if (reqIsPlumb && specIsPlumb) return true;
+
+            // Carpentry / Wood / Lock keywords
+            bool reqIsCarp = req.Contains("carpenter") || req.Contains("wood") || req.Contains("furniture") || req.Contains("door") || req.Contains("lock") || req.Contains("cabinet");
+            bool specIsCarp = s.Contains("carpenter") || s.Contains("wood") || s.Contains("furniture") || s.Contains("door") || s.Contains("lock") || s.Contains("cabinet");
+            if (reqIsCarp && specIsCarp) return true;
+
+            // Painting / Wall keywords
+            bool reqIsPaint = req.Contains("paint") || req.Contains("wall") || req.Contains("decor");
+            bool specIsPaint = s.Contains("paint") || s.Contains("wall") || s.Contains("decor");
+            if (reqIsPaint && specIsPaint) return true;
+
+            // Appliance Repair keywords
+            bool reqIsApp = req.Contains("appliance") || req.Contains("refrigerator") || req.Contains("washing") || req.Contains("oven");
+            bool specIsApp = s.Contains("appliance") || s.Contains("refrigerator") || s.Contains("washing") || s.Contains("oven");
+            if (reqIsApp && specIsApp) return true;
+
+            return false;
+        });
+    }
+
     public async Task<List<TechnicianMatchResultDto>> GetMatchingTechniciansAsync(int ticketId)
     {
         var ticket = await _context.MaintenanceTickets.FindAsync(ticketId);
@@ -69,15 +115,13 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         }
 
         // مطابقة التخصص مع المهارة المطلوبة
-        var normalizedRequired = ticket.RequiredSkill.Trim().ToLower();
         var candidates = allTechnicians.Where(tp =>
-            tp.TechnicianSpecialties.Any(ts =>
-                ts.Specialty != null && (
-                    ts.Specialty.Name.ToLower().Contains(normalizedRequired) ||
-                    normalizedRequired.Contains(ts.Specialty.Name.ToLower())
-                )
-            )
-        ).ToList();
+        {
+            var specs = tp.TechnicianSpecialties
+                .Where(ts => ts.Specialty != null)
+                .Select(ts => ts.Specialty!.Name);
+            return IsSpecialtyMatch(ticket.RequiredSkill, specs);
+        }).ToList();
 
         bool hasSkillMatch = candidates.Any();
         var pool = hasSkillMatch ? candidates : allTechnicians;
@@ -248,8 +292,15 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             throw new ArgumentException($"Ticket with ID {ticketId} not found.");
         }
 
+        if (ticket.Status != TicketStatus.Pending)
+        {
+            throw new InvalidOperationException($"Ticket #{ticketId} is already {ticket.Status} and cannot be assigned again.");
+        }
+
         var technician = await _context.TechnicianProfiles
             .Include(tp => tp.User)
+            .Include(tp => tp.TechnicianSpecialties)
+                .ThenInclude(ts => ts.Specialty)
             .FirstOrDefaultAsync(tp => tp.Id == technicianId);
 
         if (technician == null)
@@ -257,9 +308,28 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             throw new ArgumentException($"Technician Profile with ID {technicianId} not found.");
         }
 
+        var techName = technician.User?.FullName ?? $"Technician #{technician.Id}";
+
+        if (!technician.IsAvailable)
+        {
+            throw new InvalidOperationException($"Technician '{techName}' is currently marked as unavailable.");
+        }
+
+        // Validate Skill Match between Ticket and Technician
+        var techSpecs = technician.TechnicianSpecialties
+            .Where(ts => ts.Specialty != null)
+            .Select(ts => ts.Specialty!.Name)
+            .ToList();
+
+        if (!IsSpecialtyMatch(ticket.RequiredSkill, techSpecs))
+        {
+            var specsStr = techSpecs.Any() ? string.Join(", ", techSpecs) : "General Maintenance";
+            throw new InvalidOperationException($"Skill Mismatch Error: Ticket #{ticket.Id} requires '{ticket.RequiredSkill}', but technician '{techName}' specializes in '{specsStr}'. Drag & Drop assignment rejected.");
+        }
+
         var suggestions = await GetMatchingTechniciansAsync(ticketId);
         var match = suggestions.FirstOrDefault(s => s.TechnicianId == technicianId);
-        double score = match?.MatchScore ?? 75.0;
+        double score = match?.MatchScore ?? 85.0;
 
         var assignment = new Assignment
         {
@@ -274,7 +344,6 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         _context.Assignments.Add(assignment);
         ticket.Status = TicketStatus.Assigned;
 
-        var techName = technician.User?.FullName ?? $"Technician #{technician.Id}";
         var notification = new NotificationHistory
         {
             TargetRole = "Technician",

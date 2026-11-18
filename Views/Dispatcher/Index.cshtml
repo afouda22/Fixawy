@@ -7,6 +7,19 @@
     var userFacility = currentUser?.Facility;
 }
 
+<style>
+    @@keyframes shakeAnimation {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-7px); }
+        40%, 80% { transform: translateX(7px); }
+    }
+    .animate-shake {
+        animation: shakeAnimation 0.45s ease-in-out;
+        border: 2px solid #ef4444 !important;
+        background-color: rgba(239, 68, 68, 0.12) !important;
+    }
+</style>
+
 <div class="dispatcher-container pb-5">
     <!-- Header Banner -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 p-4 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff;">
@@ -480,7 +493,7 @@
                 };
 
                 list.innerHTML = tickets.map(t => `
-                    <div draggable="true" ondragstart="handleDragStart(event, ${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="card border rounded-3 shadow-sm p-3 hover-shadow transition-all" style="cursor: grab;">
+                    <div draggable="true" ondragstart="handleDragStart(event, ${t.id}, '${t.title.replace(/'/g, "\\'")}', '${(t.requiredSkill || '').replace(/'/g, "\\'")}')" class="card border rounded-3 shadow-sm p-3 hover-shadow transition-all" style="cursor: grab;">
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                             <div class="space-y-1">
                                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -557,7 +570,14 @@
                 const list = document.getElementById('techniciansDropList');
 
                 list.innerHTML = techs.map(t => `
-                    <div ondragover="handleDragOver(event, this)" ondragleave="handleDragLeave(this)" ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName}')" class="p-2.5 rounded-3 border d-flex justify-content-between align-items-center transition-all bg-body" style="transition: all 0.2s ease;">
+                    <div data-tech-id="${t.technicianId}"
+                         data-tech-name="${t.fullName.replace(/'/g, "\\'")}"
+                         data-tech-specs="${(t.specialization || '').replace(/'/g, "\\'")}"
+                         ondragover="handleDragOver(event, this)" 
+                         ondragleave="handleDragLeave(this)" 
+                         ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName.replace(/'/g, "\\'")}', '${(t.specialization || '').replace(/'/g, "\\'")}')" 
+                         class="p-2.5 rounded-3 border d-flex justify-content-between align-items-center transition-all bg-body tech-drop-target" 
+                         style="transition: all 0.2s ease;">
                         <div>
                             <div class="fw-bold small text-truncate" style="max-width: 200px;">${t.fullName}</div>
                             <div class="text-secondary" style="font-size: 0.72rem;">${t.specialization} &bull; <span class="text-warning">★ ${t.rating.toFixed(1)}</span></div>
@@ -575,34 +595,100 @@
             }
         }
 
-        // --- 8. HTML5 Drag and Drop ---
+        // --- 8. HTML5 Drag and Drop with Match Validation ---
         let draggedTicketId = null;
         let draggedTicketTitle = "";
+        let draggedTicketSkill = "";
 
-        function handleDragStart(e, ticketId, title) {
+        function checkSkillMatch(requiredSkill, techSpecialization) {
+            if (!requiredSkill || !techSpecialization) return true;
+            const req = requiredSkill.toLowerCase().trim();
+            const spec = techSpecialization.toLowerCase().trim();
+
+            if (spec.includes(req) || req.includes(spec)) return true;
+
+            const isHvacReq = req.includes("ac") || req.includes("air") || req.includes("hvac") || req.includes("cool") || req.includes("heat");
+            const isHvacSpec = spec.includes("ac") || spec.includes("air") || spec.includes("hvac") || spec.includes("cool") || spec.includes("heat");
+            if (isHvacReq && isHvacSpec) return true;
+
+            const isElecReq = req.includes("electr") || req.includes("power") || req.includes("circuit") || req.includes("wire") || req.includes("lighting");
+            const isElecSpec = spec.includes("electr") || spec.includes("power") || spec.includes("circuit") || spec.includes("wire") || spec.includes("lighting");
+            if (isElecReq && isElecSpec) return true;
+
+            const isPlumbReq = req.includes("plumb") || req.includes("pipe") || req.includes("leak") || req.includes("drain") || req.includes("water") || req.includes("sanitary");
+            const isPlumbSpec = spec.includes("plumb") || spec.includes("pipe") || spec.includes("leak") || spec.includes("drain") || spec.includes("water") || spec.includes("sanitary");
+            if (isPlumbReq && isPlumbSpec) return true;
+
+            const isCarpReq = req.includes("carpenter") || req.includes("wood") || req.includes("lock") || req.includes("door") || req.includes("furniture");
+            const isCarpSpec = spec.includes("carpenter") || spec.includes("wood") || spec.includes("lock") || spec.includes("door") || spec.includes("furniture");
+            if (isCarpReq && isCarpSpec) return true;
+
+            const isPaintReq = req.includes("paint") || req.includes("wall") || req.includes("decor");
+            const isPaintSpec = spec.includes("paint") || spec.includes("wall") || spec.includes("decor");
+            if (isPaintReq && isPaintSpec) return true;
+
+            const isAppReq = req.includes("appliance") || req.includes("refrigerator") || req.includes("washing") || req.includes("oven");
+            const isAppSpec = spec.includes("appliance") || spec.includes("refrigerator") || spec.includes("washing") || spec.includes("oven");
+            if (isAppReq && isAppSpec) return true;
+
+            return false;
+        }
+
+        function handleDragStart(e, ticketId, title, requiredSkill) {
             draggedTicketId = ticketId;
             draggedTicketTitle = title;
+            draggedTicketSkill = requiredSkill || "";
             e.dataTransfer.setData("text/plain", ticketId);
+            e.dataTransfer.setData("text/skill", requiredSkill || "");
             e.dataTransfer.effectAllowed = "move";
         }
 
         function handleDragOver(e, el) {
             e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            el.classList.add("border-primary", "bg-primary-subtle");
+            const techSpecs = el.getAttribute("data-tech-specs") || "";
+            const isMatch = checkSkillMatch(draggedTicketSkill, techSpecs);
+
+            el.classList.remove("border-primary", "bg-primary-subtle", "border-success", "bg-success-subtle", "border-danger", "bg-danger-subtle");
+
+            if (isMatch) {
+                e.dataTransfer.dropEffect = "move";
+                el.classList.add("border-success", "bg-success-subtle");
+                el.style.border = "2px dashed #10b981";
+            } else {
+                e.dataTransfer.dropEffect = "none";
+                el.classList.add("border-danger", "bg-danger-subtle");
+                el.style.border = "2px dashed #ef4444";
+            }
         }
 
         function handleDragLeave(el) {
-            el.classList.remove("border-primary", "bg-primary-subtle");
+            el.classList.remove("border-primary", "bg-primary-subtle", "border-success", "bg-success-subtle", "border-danger", "bg-danger-subtle");
+            el.style.border = "";
         }
 
-        async function handleDrop(e, techId, techName) {
+        async function handleDrop(e, techId, techName, techSpecs) {
             e.preventDefault();
             const el = e.currentTarget;
-            el.classList.remove("border-primary", "bg-primary-subtle");
+            handleDragLeave(el);
 
             const ticketId = draggedTicketId || e.dataTransfer.getData("text/plain");
+            const skill = draggedTicketSkill || e.dataTransfer.getData("text/skill");
             if (!ticketId) return;
+
+            const specs = techSpecs || el.getAttribute("data-tech-specs") || "";
+            const isMatch = checkSkillMatch(skill, specs);
+
+            if (!isMatch) {
+                showToast(
+                    "❌ Skill Mismatch Error", 
+                    `Cannot assign Ticket #${ticketId} requiring '${skill}' to '${techName}' (${specs}). Specialties do not match!`, 
+                    "danger"
+                );
+                // Trigger visual shake feedback
+                el.classList.add("animate-shake");
+                setTimeout(() => el.classList.remove("animate-shake"), 600);
+                return;
+            }
 
             showToast("🎯 Drag & Drop Dispatched", `Assigning ticket #${ticketId} to ${techName}...`, "primary");
             await manualAssign(ticketId, techId);
@@ -643,8 +729,13 @@
                     if (modal) modal.hide();
                     refreshAll();
                 } else {
-                    showToast("Manual Assign Notice", data.message, "danger");
+                    showToast("❌ Assignment Rejected", data.message || "Failed to assign technician", "danger");
                 }
+            } catch (err) {
+                console.error("Manual assign error:", err);
+                showToast("System Error", "Failed to connect to server.", "danger");
+            }
+        }
             } catch (err) {
                 console.error("Manual assign error:", err);
             }
