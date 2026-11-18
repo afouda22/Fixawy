@@ -1,0 +1,27 @@
+name: Auto Deploy to MonsterASP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy Fixawyy
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore Fixawyy.csproj
+
+      - name: Deploy to MonsterASP
+        run: dotnet publish Fixawyy.csproj -c Release /p:PublishProfile=MonsterASP /p:Password="3k@CR8j+#gS7"
