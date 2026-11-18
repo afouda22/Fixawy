@@ -56,7 +56,7 @@
                         </li>
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            @if (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin") || User.IsInRole("Manager"))
+                            @if (User.IsInRole("FacilityAdmin") || User.IsInRole("Manager"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link nav-link-modern" asp-controller="Dispatcher" asp-action="Index">
@@ -89,9 +89,9 @@
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">
-                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin") || User.IsInRole("Manager")))
+                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("FacilityAdmin") || User.IsInRole("Manager")))
                         {
-                            <!-- Notification Bell Dropdown (Only for Facility Admins & Super Admins) -->
+                            <!-- Notification Bell Dropdown (Only for Facility Admins & Facility Managers) -->
                             <div class="dropdown me-1">
                                 <button class="btn btn-link text-white p-1 position-relative dropdown-toggle shadow-none" type="button" id="navNotificationBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">
                                     <i class="bi bi-bell-fill fs-5"></i>
