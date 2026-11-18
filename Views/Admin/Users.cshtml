@@ -140,7 +140,7 @@
                                                 <option value="@r" selected="@(u.Roles.Contains(r))">@r</option>
                                             }
                                         </select>
-                                        <select name="facility" class="form-select form-select-sm form-control-modern py-1 facility-select" style="min-width: 140px; @(u.Roles.Contains("FacilityAdmin") ? "" : "display:none;")">
+                                        <select name="facility" class="form-select form-select-sm form-control-modern py-1 facility-select" style="min-width: 140px; @(u.Roles.Contains("FacilityAdmin") || u.Roles.Contains("Employee") ? "" : "display:none;")">
                                             <option value="">-- Choose Facility --</option>
                                             @foreach (var f in Model.AvailableFacilities)
                                             {
@@ -196,7 +196,7 @@
             if (!form) return;
             const facilitySelect = form.querySelector('.facility-select');
             if (facilitySelect) {
-                if (roleSelect.value === 'FacilityAdmin') {
+                if (roleSelect.value === 'FacilityAdmin' || roleSelect.value === 'Employee') {
                     facilitySelect.style.display = 'block';
                 } else {
                     facilitySelect.style.display = 'none';

@@ -95,9 +95,14 @@ public class UserService : IUserService
         await _userManager.RemoveFromRolesAsync(user, currentRoles);
         var addRes = await _userManager.AddToRoleAsync(user, newRole);
 
-        if (!string.IsNullOrWhiteSpace(facility))
+        if (newRole == AppRoles.FacilityAdmin || newRole == AppRoles.Employee)
         {
-            user.Facility = facility;
+            user.Facility = !string.IsNullOrWhiteSpace(facility) ? facility : null;
+            await _userManager.UpdateAsync(user);
+        }
+        else if (newRole == AppRoles.Admin || newRole == AppRoles.Customer)
+        {
+            user.Facility = null;
             await _userManager.UpdateAsync(user);
         }
 
