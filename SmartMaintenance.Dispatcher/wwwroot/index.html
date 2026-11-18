@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Maintenance Platform | Dispatcher & Executive Center</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SignalR Client -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .toast-enter { transform: translateX(100%); transition: all 0.3s ease-out; }
+    .toast-active { transform: translateX(0); }
+    .toast-leave { transform: translateX(100%); opacity: 0; transition: all 0.3s ease-in; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Toast Notifications Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Top Navbar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-blue-500/20">
+          SM
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight">Smart Maintenance Platform</h1>
+          <p class="text-xs text-slate-500 font-medium">Teammate 4: Dispatcher Engine, SignalR Hub & Analytics</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+        <button onclick="switchTab('dispatch')" id="tabBtn-dispatch" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all bg-white text-blue-600 shadow-sm">
+          📋 Dispatch Board
+        </button>
+        <button onclick="switchTab('analytics')" id="tabBtn-analytics" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900">
+          📊 Executive Analytics
+        </button>
+        <button onclick="switchTab('notifications')" id="tabBtn-notifications" class="px-4 py-2 text-sm font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900">
+          🔔 Notification Center
+        </button>
+      </nav>
+
+      <!-- Right controls: SignalR Live Pill + Bell -->
+      <div class="flex items-center gap-4">
+        <!-- Live status -->
+        <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200" id="connectionBadge">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>SignalR Live</span>
+        </div>
+
+        <!-- Notification Bell Dropdown -->
+        <div class="relative">
+          <button onclick="toggleBellDropdown()" class="relative p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="unreadBadge" class="hidden absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">0</span>
+          </button>
+
+          <!-- Dropdown Panel -->
+          <div id="bellDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl py-3 z-50">
+            <div class="px-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+              <span class="font-bold text-slate-900 text-sm">Live Notifications</span>
+              <button onclick="markAllNotificationsRead()" class="text-xs text-blue-600 hover:underline">Mark all read</button>
+            </div>
+            <div id="bellList" class="max-h-72 overflow-y-auto divide-y divide-slate-100">
+              <div class="p-4 text-center text-xs text-slate-400">Loading notifications...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- ================= TAB 1: DISPATCH BOARD ================= -->
+    <div id="view-dispatch" class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900">Manager Dispatch Board</h2>
+          <p class="text-sm text-slate-500">Assign maintenance tickets to eligible technicians using the Smart Matchmaking Algorithm.</p>
+        </div>
+        <button onclick="loadPendingTickets(); loadActiveAssignments();" class="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition shadow-sm">
+          <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+          Refresh Board
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Pending Tickets (7 Cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <h3 class="font-bold text-slate-900">Pending Tickets Awaiting Dispatch</h3>
+            </div>
+            <span id="pendingCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">0</span>
+          </div>
+
+          <div id="pendingTicketsList" class="space-y-3">
+            <!-- Dynamically populated -->
+            <div class="text-center py-12 text-slate-400">Loading pending tickets...</div>
+          </div>
+        </div>
+
+        <!-- Right: Active Assignments & Technicians (5 Cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          <!-- Active Assignments -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <h3 class="font-bold text-slate-900">Active Dispatched Jobs</h3>
+              </div>
+              <span id="activeAssignmentsCount" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">0</span>
+            </div>
+            <div id="activeAssignmentsList" class="space-y-3 max-h-96 overflow-y-auto">
+              <div class="text-center py-6 text-slate-400 text-sm">No active assignments</div>
+            </div>
+          </div>
+
+          <!-- Technicians Overview -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="font-bold text-slate-900">Technicians Roster & Load</h3>
+              <span class="text-xs text-slate-500">Live Status</span>
+            </div>
+            <div id="techniciansOverviewList" class="space-y-2">
+              <div class="text-center py-6 text-slate-400 text-sm">Loading technicians...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 2: EXECUTIVE ANALYTICS ================= -->
+    <div id="view-analytics" class="hidden space-y-8">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900">Executive Analytics & KPIs</h2>
+          <p class="text-sm text-slate-500">Real-time performance metrics, resolution durations, and department breakdowns.</p>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <a href="/api/analytics/export/csv" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition shadow-sm">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Export CSV
+          </a>
+          <a href="/api/analytics/export/pdf" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition shadow-md shadow-blue-500/20">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            Export PDF Report
+          </a>
+        </div>
+      </div>
+
+      <!-- KPI Metric Cards Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Tickets</p>
+          <p id="kpiTotalTickets" class="text-3xl font-extrabold text-slate-900 mt-2">--</p>
+          <span class="text-xs text-slate-500 mt-1 inline-block">All recorded incidents</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-amber-500 uppercase tracking-wider">Pending Dispatch</p>
+          <p id="kpiPending" class="text-3xl font-extrabold text-amber-600 mt-2">--</p>
+          <span class="text-xs text-slate-500 mt-1 inline-block">Needs assignment</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-blue-500 uppercase tracking-wider">In Progress</p>
+          <p id="kpiInProgress" class="text-3xl font-extrabold text-blue-600 mt-2">--</p>
+          <span class="text-xs text-slate-500 mt-1 inline-block">Active with technician</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-emerald-500 uppercase tracking-wider">Resolved</p>
+          <p id="kpiResolved" class="text-3xl font-extrabold text-emerald-600 mt-2">--</p>
+          <span class="text-xs text-slate-500 mt-1 inline-block">Successfully completed</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm col-span-2 md:col-span-1">
+          <p class="text-xs font-bold text-purple-500 uppercase tracking-wider">Avg Resolution</p>
+          <p id="kpiAvgHours" class="text-3xl font-extrabold text-purple-600 mt-2">--</p>
+          <span class="text-xs text-slate-500 mt-1 inline-block">Hours per ticket</span>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Tickets by Department -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 text-blue-600"></i>
+            Tickets by Department / Location
+          </h3>
+          <div class="h-64">
+            <canvas id="deptChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Tickets by Status -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-600"></i>
+            Ticket Status Distribution
+          </h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technician Performance Rankings Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="award" class="w-5 h-5 text-amber-500"></i>
+          Technician Performance Ranking
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-slate-400 uppercase text-xs">
+              <tr>
+                <th class="py-3 px-4">Technician</th>
+                <th class="py-3 px-4">Specialization</th>
+                <th class="py-3 px-4">Rating</th>
+                <th class="py-3 px-4">Completed Jobs</th>
+                <th class="py-3 px-4">Active Jobs</th>
+                <th class="py-3 px-4">Avg Duration</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody" class="divide-y divide-slate-100">
+              <tr><td colspan="6" class="text-center py-4 text-slate-400">Loading rankings...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: NOTIFICATION CENTER ================= -->
+    <div id="view-notifications" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900">Notification History</h2>
+          <p class="text-sm text-slate-500">All alerts and real-time socket events recorded in the system.</p>
+        </div>
+        <button onclick="markAllNotificationsRead()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition">
+          Mark All Read
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100" id="fullNotificationList">
+        <div class="p-6 text-center text-slate-400">Loading notifications...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal for Smart Suggestions -->
+  <div id="suggestModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">🧠</span>
+          <div>
+            <h3 class="font-bold text-slate-900" id="modalTicketTitle">Ticket Matching Candidates</h3>
+            <p class="text-xs text-slate-500" id="modalTicketSubtitle">Evaluating technicians based on skill, rating & workload</p>
+          </div>
+        </div>
+        <button onclick="closeSuggestModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Candidate list -->
+      <div id="modalCandidateList" class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="text-center py-6 text-slate-400">Loading algorithm suggestions...</div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-100">
+        <button onclick="closeSuggestModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl text-sm hover:bg-slate-200 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SignalR Real-Time Connection ---
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("/hubs/notifications")
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on("NewAssignment", (data) => {
+      showToast("🚀 New Assignment Dispatched", `Ticket '${data.ticketTitle}' assigned to ${data.technicianName} (Match: ${data.matchScore}%)`, "blue");
+      loadPendingTickets();
+      loadActiveAssignments();
+      loadAnalyticsData();
+    });
+
+    connection.on("StatusChanged", (data) => {
+      showToast("🔄 Ticket Status Updated", `Ticket #${data.ticketId} status changed to ${data.newStatus}`, "purple");
+      loadPendingTickets();
+      loadActiveAssignments();
+      loadAnalyticsData();
+    });
+
+    connection.on("NewNotification", (data) => {
+      showToast(data.title, data.message, "amber");
+      fetchNotifications();
+    });
+
+    connection.start()
+      .then(() => {
+        console.log("Connected to SignalR Hub");
+        document.getElementById("connectionBadge").innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>SignalR Live</span>
+        `;
+      })
+      .catch(err => {
+        console.error("SignalR connection error:", err);
+        document.getElementById("connectionBadge").innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          <span>SignalR Offline</span>
+        `;
+      });
+
+    // --- Toast Notifications ---
+    function showToast(title, message, color = "blue") {
+      const colors = {
+        blue: "border-blue-500 bg-blue-50 text-blue-900",
+        purple: "border-purple-500 bg-purple-50 text-purple-900",
+        amber: "border-amber-500 bg-amber-50 text-amber-900",
+        emerald: "border-emerald-500 bg-emerald-50 text-emerald-900"
+      };
+
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `p-4 rounded-2xl shadow-xl border-l-4 ${colors[color] || colors.blue} pointer-events-auto toast-enter bg-white flex flex-col gap-1`;
+      toast.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sm text-slate-900">${title}</span>
+          <span class="text-[10px] text-slate-400">Just now</span>
+        </div>
+        <p class="text-xs text-slate-600">${message}</p>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add("toast-active"), 10);
+      setTimeout(() => {
+        toast.classList.remove("toast-active");
+        toast.classList.add("toast-leave");
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+
+    // --- Navigation Tabs ---
+    function switchTab(tab) {
+      ['dispatch', 'analytics', 'notifications'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === tab) {
+          view.classList.remove('hidden');
+          btn.className = "px-4 py-2 text-sm font-semibold rounded-lg transition-all bg-white text-blue-600 shadow-sm";
+        } else {
+          view.classList.add('hidden');
+          btn.className = "px-4 py-2 text-sm font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900";
+        }
+      });
+
+      if (tab === 'analytics') loadAnalyticsData();
+      if (tab === 'notifications') fetchNotifications();
+    }
+
+    // --- Load Pending Tickets ---
+    async function loadPendingTickets() {
+      try {
+        const res = await fetch('/api/assignment/pending-tickets');
+        const tickets = await res.json();
+        const list = document.getElementById('pendingTicketsList');
+        document.getElementById('pendingCountBadge').innerText = tickets.length;
+
+        if (tickets.length === 0) {
+          list.innerHTML = `<div class="p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-100">🎉 All tickets have been dispatched! No pending tickets.</div>`;
+          return;
+        }
+
+        const priorityColors = {
+          Critical: 'bg-rose-100 text-rose-800 border-rose-200',
+          High: 'bg-orange-100 text-orange-800 border-orange-200',
+          Medium: 'bg-blue-100 text-blue-800 border-blue-200',
+          Low: 'bg-slate-100 text-slate-700 border-slate-200'
+        };
+
+        list.innerHTML = tickets.map(t => `
+          <div draggable="true" ondragstart="handleDragStart(event, ${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-grab active:cursor-grabbing">
+            <div class="space-y-1.5 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${priorityColors[t.priority] || priorityColors.Medium}">${t.priority}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">🛠️ ${t.requiredSkill}</span>
+                <span class="text-xs text-slate-400">📍 ${t.department}</span>
+                <span class="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-medium">✋ Drag to Tech</span>
+              </div>
+              <h4 class="font-bold text-slate-900 text-base">${t.title}</h4>
+              <p class="text-xs text-slate-500">${t.description}</p>
+            </div>
+            <div class="flex items-center gap-2 self-end md:self-center">
+              <button onclick="openSmartSuggest(${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl transition flex items-center gap-1.5">
+                🧠 Smart Suggest
+              </button>
+              <button onclick="triggerAutoAssign(${t.id})" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5">
+                ⚡ Auto Assign
+              </button>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Error loading tickets:", err);
+      }
+    }
+
+    // --- Load Active Assignments ---
+    async function loadActiveAssignments() {
+      try {
+        const res = await fetch('/api/assignment/active');
+        const assignments = await res.json();
+        const list = document.getElementById('activeAssignmentsList');
+        document.getElementById('activeAssignmentsCount').innerText = assignments.length;
+
+        if (assignments.length === 0) {
+          list.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm">No active assignments</div>`;
+          return;
+        }
+
+        list.innerHTML = assignments.map(a => `
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-slate-900">${a.ticketTitle}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${a.matchScore}% Match</span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span>👤 ${a.technicianName}</span>
+              <button onclick="resolveTicket(${a.assignmentId})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                ✓ Mark Resolved
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error("Error loading assignments:", err);
+      }
+    }
+
+    // --- Smart Suggest Modal ---
+    let currentTicketId = null;
+    async function openSmartSuggest(ticketId, ticketTitle) {
+      currentTicketId = ticketId;
+      document.getElementById('modalTicketTitle').innerText = ticketTitle;
+      document.getElementById('modalTicketSubtitle').innerText = `Evaluating technicians for Ticket #${ticketId}`;
+      document.getElementById('modalCandidateList').innerHTML = `<div class="text-center py-6 text-slate-400">Running algorithm matchmaking...</div>`;
+      document.getElementById('suggestModal').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/assignment/suggestions/${ticketId}`);
+        const candidates = await res.json();
+        const list = document.getElementById('modalCandidateList');
+
+        if (candidates.length === 0) {
+          list.innerHTML = `<div class="p-6 text-center text-slate-400">No matching available technicians found for this skill.</div>`;
+          return;
+        }
+
+        list.innerHTML = candidates.map((c, idx) => `
+          <div class="p-4 rounded-2xl border ${c.isRecommended ? 'border-blue-400 bg-blue-50/50 ring-2 ring-blue-500/10' : 'border-slate-200 bg-white'} space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-sm">${c.fullName}</span>
+                <span class="text-xs text-slate-500">(${c.specialization})</span>
+                ${c.isRecommended ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">⭐ Top Match</span>' : ''}
+              </div>
+              <span class="font-extrabold text-blue-600 text-sm">${c.matchScore}%</span>
+            </div>
+
+            <!-- Score progress bar -->
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div class="bg-blue-600 h-2 rounded-full" style="width: ${c.matchScore}%"></div>
+            </div>
+
+            <!-- Match Reasons list -->
+            <div class="text-[11px] text-slate-500 space-y-1">
+              ${c.matchReasons.map(r => `<div>✓ ${r}</div>`).join('')}
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span class="text-xs text-slate-400">Active jobs: ${c.activeTicketsCount}</span>
+              <button onclick="manualAssign(${ticketId}, ${c.technicianId})" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition">
+                Assign ${c.fullName}
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error("Error fetching suggestions:", err);
+      }
+    }
+
+    function closeSuggestModal() {
+      document.getElementById('suggestModal').classList.add('hidden');
+    }
+
+    // --- Assign Actions ---
+    async function triggerAutoAssign(ticketId) {
+      try {
+        const res = await fetch(`/api/assignment/auto-assign/${ticketId}`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("⚡ Auto-Assign Success", data.message, "emerald");
+          loadPendingTickets();
+          loadActiveAssignments();
+        } else {
+          showToast("Error", data.message, "rose");
+        }
+      } catch (err) {
+        console.error("Auto assign error:", err);
+      }
+    }
+
+    async function manualAssign(ticketId, technicianId) {
+      try {
+        const res = await fetch('/api/assignment/manual-assign', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ ticketId, technicianId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("✅ Manual Assign Success", data.message, "emerald");
+          closeSuggestModal();
+          loadPendingTickets();
+          loadActiveAssignments();
+        } else {
+          showToast("Error", data.message, "rose");
+        }
+      } catch (err) {
+        console.error("Manual assign error:", err);
+      }
+    }
+
+    // --- HTML5 Drag & Drop Support ---
+    let draggedTicketId = null;
+    let draggedTicketTitle = "";
+
+    function handleDragStart(e, ticketId, title) {
+      draggedTicketId = ticketId;
+      draggedTicketTitle = title;
+      e.dataTransfer.setData("text/plain", ticketId);
+      e.dataTransfer.effectAllowed = "move";
+    }
+
+    function handleDragOver(e, element) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      element.classList.add("bg-blue-50", "border-blue-400", "scale-[1.02]");
+    }
+
+    function handleDragLeave(element) {
+      element.classList.remove("bg-blue-50", "border-blue-400", "scale-[1.02]");
+    }
+
+    async function handleDrop(e, technicianId, technicianName) {
+      e.preventDefault();
+      const element = e.currentTarget;
+      element.classList.remove("bg-blue-50", "border-blue-400", "scale-[1.02]");
+
+      const ticketId = draggedTicketId || e.dataTransfer.getData("text/plain");
+      if (!ticketId) return;
+
+      showToast("🎯 Drag & Drop Dispatched", `Assigning ticket #${ticketId} to ${technicianName}...`, "blue");
+      await manualAssign(ticketId, technicianId);
+    }
+
+    // --- Mark Assignment as Resolved ---
+    async function resolveTicket(assignmentId) {
+      try {
+        const res = await fetch(`/api/assignment/${assignmentId}/resolve`, { method: 'PUT' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("🎉 Job Completed", "Ticket marked as Resolved and closed.", "emerald");
+          loadPendingTickets();
+          loadActiveAssignments();
+          loadTechniciansOverview();
+          loadAnalyticsData();
+        } else {
+          showToast("Error", data.message, "rose");
+        }
+      } catch (err) {
+        console.error("Resolve error:", err);
+      }
+    }
+
+    // --- Load Technicians Overview ---
+    async function loadTechniciansOverview() {
+      try {
+        const res = await fetch('/api/analytics/technician-rankings');
+        const techs = await res.json();
+        const list = document.getElementById('techniciansOverviewList');
+
+        list.innerHTML = techs.map(t => `
+          <div ondragover="handleDragOver(event, this)" ondragleave="handleDragLeave(this)" ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 border border-slate-100 transition transition-all">
+            <div class="space-y-0.5">
+              <p class="font-bold text-xs text-slate-900">${t.fullName}</p>
+              <p class="text-[11px] text-slate-400">${t.specialization} • ★ ${t.rating.toFixed(1)}</p>
+            </div>
+            <div class="text-right flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${t.activeTickets > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                ${t.activeTickets} Active
+              </span>
+              <span class="text-[10px] text-slate-400">📥 Drop here</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error("Error loading technicians:", err);
+      }
+    }
+
+    // --- Load Executive Analytics ---
+    let deptChart = null;
+    let statusChart = null;
+
+    async function loadAnalyticsData() {
+      try {
+        // 1. KPI Summary
+        const kpiRes = await fetch('/api/analytics/kpi-summary');
+        const kpi = await kpiRes.json();
+        document.getElementById('kpiTotalTickets').innerText = kpi.totalTickets;
+        document.getElementById('kpiPending').innerText = kpi.pendingTickets;
+        document.getElementById('kpiInProgress').innerText = kpi.inProgressTickets;
+        document.getElementById('kpiResolved').innerText = kpi.resolvedTickets;
+        document.getElementById('kpiAvgHours').innerText = `${kpi.averageResolutionHours}h`;
+
+        // 2. Department Chart
+        const deptRes = await fetch('/api/analytics/by-department');
+        const deptData = await deptRes.json();
+        const deptCtx = document.getElementById('deptChart').getContext('2d');
+        if (deptChart) deptChart.destroy();
+        deptChart = new Chart(deptCtx, {
+          type: 'bar',
+          data: {
+            labels: deptData.map(d => d.department),
+            datasets: [{
+              label: 'Total Tickets',
+              data: deptData.map(d => d.ticketCount),
+              backgroundColor: '#3b82f6',
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          }
+        });
+
+        // 3. Status Chart
+        const statusRes = await fetch('/api/analytics/by-status');
+        const statusData = await statusRes.json();
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        if (statusChart) statusChart.destroy();
+        statusChart = new Chart(statusCtx, {
+          type: 'doughnut',
+          data: {
+            labels: statusData.map(s => s.status),
+            datasets: [{
+              data: statusData.map(s => s.ticketCount),
+              backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#6366f1', '#64748b']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+
+        // 4. Technician Ranking Table
+        const rankRes = await fetch('/api/analytics/technician-rankings');
+        const rankings = await rankRes.json();
+        const tbody = document.getElementById('rankingTableBody');
+        tbody.innerHTML = rankings.map(r => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-bold text-slate-900">${r.fullName}</td>
+            <td class="py-3 px-4 text-xs"><span class="px-2 py-0.5 bg-slate-100 rounded-md">${r.specialization}</span></td>
+            <td class="py-3 px-4 font-bold text-amber-500">★ ${r.rating.toFixed(1)}</td>
+            <td class="py-3 px-4">${r.completedTickets}</td>
+            <td class="py-3 px-4">${r.activeTickets}</td>
+            <td class="py-3 px-4">${r.avgResolutionHours} hrs</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error("Error loading analytics:", err);
+      }
+    }
+
+    // --- Notifications Center ---
+    async function fetchNotifications() {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+
+        // Update badge
+        const badge = document.getElementById('unreadBadge');
+        if (data.unreadCount > 0) {
+          badge.innerText = data.unreadCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        // Populate bell dropdown
+        const bellList = document.getElementById('bellList');
+        if (data.notifications.length === 0) {
+          bellList.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">No notifications</div>`;
+        } else {
+          bellList.innerHTML = data.notifications.slice(0, 6).map(n => `
+            <div class="p-3 hover:bg-slate-50 transition flex items-start gap-3 ${!n.isRead ? 'bg-blue-50/40' : ''}">
+              <div class="w-2 h-2 mt-1.5 rounded-full ${!n.isRead ? 'bg-blue-600' : 'bg-transparent'}"></div>
+              <div class="flex-1 space-y-0.5">
+                <p class="font-bold text-xs text-slate-900">${n.title}</p>
+                <p class="text-[11px] text-slate-500 leading-tight">${n.message}</p>
+                <p class="text-[10px] text-slate-400">${new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Populate full notification list
+        const fullList = document.getElementById('fullNotificationList');
+        if (fullList) {
+          fullList.innerHTML = data.notifications.map(n => `
+            <div class="p-5 flex items-start justify-between gap-4 ${!n.isRead ? 'bg-blue-50/20' : ''}">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-sm text-slate-900">${n.title}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">${n.eventType}</span>
+                  ${!n.isRead ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">New</span>' : ''}
+                </div>
+                <p class="text-xs text-slate-600">${n.message}</p>
+              </div>
+              <span class="text-xs text-slate-400 whitespace-nowrap">${new Date(n.createdAt).toLocaleString()}</span>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    }
+
+    function toggleBellDropdown() {
+      document.getElementById('bellDropdown').classList.toggle('hidden');
+    }
+
+    async function markAllNotificationsRead() {
+      try {
+        await fetch('/api/notifications/mark-all-read', { method: 'PUT' });
+        fetchNotifications();
+      } catch (err) {
+        console.error("Error marking read:", err);
+      }
+    }
+
+    // --- Initial Load ---
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadPendingTickets();
+      loadActiveAssignments();
+      loadTechniciansOverview();
+      fetchNotifications();
+    });
+  </script>
+</body>
+</html>
