@@ -30,6 +30,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(u => u.Country).HasMaxLength(100);
             entity.Property(u => u.SecondaryPhoneNumber).HasMaxLength(30);
             entity.Property(u => u.VerificationCode).HasMaxLength(10);
+            entity.Property(u => u.Facility).HasMaxLength(150);
         });
 
         builder.Entity<TechnicianProfile>(entity =>

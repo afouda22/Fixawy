@@ -1,5 +1,10 @@
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
 @{
     ViewData["Title"] = "Facility Operations Dispatcher & Executive Analytics";
+    var currentUser = await UserManager.GetUserAsync(User);
+    var isSuperAdmin = currentUser != null && await UserManager.IsInRoleAsync(currentUser, AppRoles.Admin);
+    var userFacility = currentUser?.Facility;
 }
 
 <div class="dispatcher-container pb-5">
@@ -11,10 +16,12 @@
             </div>
             <div>
                 <div class="d-flex align-items-center gap-2">
-                    <h2 class="fw-bold mb-0 text-white fs-3">Facility Operations Dispatcher & Analytics</h2>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small rounded-pill">Facility Admin Engine</span>
+                    <h2 class="fw-bold mb-0 text-white fs-3">Operations Dispatcher & Analytics</h2>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small rounded-pill">
+                        @(isSuperAdmin ? "Super Admin Console" : $"Facility Admin - {userFacility ?? "Organization"}")
+                    </span>
                 </div>
-                <p class="text-secondary small mb-0 mt-1">Smart matchmaking algorithm, real-time SignalR push notifications, and executive KPIs per facility.</p>
+                <p class="text-secondary small mb-0 mt-1">Smart matchmaking algorithm, real-time SignalR push notifications, and executive KPIs.</p>
             </div>
         </div>
 
@@ -43,15 +50,35 @@
                     <i class="bi bi-buildings-fill fs-5"></i>
                 </span>
                 <div>
-                    <h6 class="fw-bold mb-0">Facility Context / المنشأة والموقع:</h6>
-                    <small class="text-secondary">Filter tickets, live jobs, and executive analytics by your organization / facility</small>
+                    <h6 class="fw-bold mb-0">Facility Context / نطاق المنشأة:</h6>
+                    <small class="text-secondary">
+                        @if (isSuperAdmin)
+                        {
+                            <span class="text-primary fw-semibold"><i class="bi bi-shield-check"></i> Super Administrator View</span>
+                            <span>&bull; You can switch between all registered facilities and campuses</span>
+                        }
+                        else
+                        {
+                            <span class="text-success fw-semibold"><i class="bi bi-building-check"></i> Isolated Facility Admin</span>
+                            <span>&bull; Strictly restricted to your organization: <strong>@(userFacility ?? "Assigned Facility")</strong></span>
+                        }
+                    </small>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <label for="facilityFilterSelect" class="small fw-semibold text-secondary mb-0 text-nowrap">Selected Facility:</label>
-                <select id="facilityFilterSelect" onchange="onFacilityFilterChanged()" class="form-select form-select-sm fw-bold border-primary text-primary" style="min-width: 270px;">
-                    <option value="All">🏢 All Facilities (جميع المنشآت والمرافق)</option>
-                </select>
+                <label for="facilityFilterSelect" class="small fw-semibold text-secondary mb-0 text-nowrap">Active Facility:</label>
+                @if (isSuperAdmin)
+                {
+                    <select id="facilityFilterSelect" onchange="onFacilityFilterChanged()" class="form-select form-select-sm fw-bold border-primary text-primary" style="min-width: 270px;">
+                        <option value="All">🏢 All Facilities (جميع المنشآت والمرافق)</option>
+                    </select>
+                }
+                else
+                {
+                    <select id="facilityFilterSelect" disabled class="form-select form-select-sm fw-bold border-success text-success bg-light" style="min-width: 270px;">
+                        <option value="@userFacility" selected>📍 @(userFacility ?? "My Assigned Facility") (منشأتك الحالية)</option>
+                    </select>
+                }
             </div>
         </div>
     </div>
@@ -305,7 +332,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 
     <script>
-        let currentFacility = 'All';
+        const isSuperAdmin = @(isSuperAdmin ? "true" : "false");
+        const userAssignedFacility = '@(userFacility ?? "")';
+        let currentFacility = isSuperAdmin ? 'All' : (userAssignedFacility || 'All');
 
         // --- 1. SignalR Live Hub Connection ---
         const connection = new signalR.HubConnectionBuilder()
@@ -376,6 +405,11 @@
 
         // --- 3. Facility Filter & List Loader ---
         async function loadFacilitiesList() {
+            if (!isSuperAdmin) {
+                // Facility admin is already locked to their facility
+                return;
+            }
+
             try {
                 const res = await fetch('/api/assignment/facilities');
                 if (!res.ok) return;
@@ -391,6 +425,7 @@
         }
 
         function onFacilityFilterChanged() {
+            if (!isSuperAdmin) return;
             const select = document.getElementById('facilityFilterSelect');
             if (!select) return;
             currentFacility = select.value;

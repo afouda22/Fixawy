@@ -25,12 +25,13 @@ public class AdminController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Roles = AppRoles.Admin)]
-    public async Task<IActionResult> AssignRole(string userId, string newRole)
+    public async Task<IActionResult> AssignRole(string userId, string newRole, string? facility)
     {
-        var success = await _userService.AssignRoleAsync(userId, newRole);
+        var success = await _userService.AssignRoleAsync(userId, newRole, facility);
         if (success)
         {
-            TempData["SuccessMessage"] = $"Role changed to '{newRole}' successfully.";
+            var facInfo = !string.IsNullOrWhiteSpace(facility) ? $" (Facility: {facility})" : "";
+            TempData["SuccessMessage"] = $"Role changed to '{newRole}'{facInfo} successfully.";
         }
         else
         {

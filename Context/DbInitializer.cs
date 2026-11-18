@@ -34,6 +34,7 @@ public static class DbInitializer
                 FullName = "System Super Administrator",
                 EmailConfirmed = true,
                 IsActive = true,
+                Facility = null, // Super Admin sees all facilities
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -47,8 +48,8 @@ public static class DbInitializer
         // 2.1 Facility Admins (Admins of Employees per Facility)
         var facilityAdmins = new[]
         {
-            new { Email = "engineering.admin@fixawyy.com", Name = "Eng. Tamer Refaat (Faculty Admin - Engineering)", Role = AppRoles.FacilityAdmin },
-            new { Email = "mall.admin@fixawyy.com", Name = "Hassan Sherif (Facility Admin - Mall Food Court)", Role = AppRoles.FacilityAdmin }
+            new { Email = "engineering.admin@fixawyy.com", Name = "Eng. Tamer Refaat (Faculty Admin - Engineering)", Role = AppRoles.FacilityAdmin, Facility = "Faculty of Engineering" },
+            new { Email = "mall.admin@fixawyy.com", Name = "Hassan Sherif (Facility Admin - Mall Food Court)", Role = AppRoles.FacilityAdmin, Facility = "Mall Food Court" }
         };
 
         foreach (var fa in facilityAdmins)
@@ -63,6 +64,7 @@ public static class DbInitializer
                     FullName = fa.Name,
                     EmailConfirmed = true,
                     IsActive = true,
+                    Facility = fa.Facility,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -71,6 +73,11 @@ public static class DbInitializer
                 {
                     await userManager.AddToRoleAsync(faUser, fa.Role);
                 }
+            }
+            else if (string.IsNullOrEmpty(existingFa.Facility))
+            {
+                existingFa.Facility = fa.Facility;
+                await userManager.UpdateAsync(existingFa);
             }
         }
 
@@ -86,6 +93,7 @@ public static class DbInitializer
                 FullName = "Kareem Adel (Staff Employee - Engineering Dept)",
                 EmailConfirmed = true,
                 IsActive = true,
+                Facility = "Faculty of Engineering",
                 CreatedAt = DateTime.UtcNow
             };
 

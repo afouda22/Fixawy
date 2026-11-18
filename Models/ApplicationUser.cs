@@ -19,5 +19,8 @@ public class ApplicationUser : IdentityUser
     public string? VerificationCode { get; set; }
     public DateTime? VerificationCodeExpiresAt { get; set; }
 
+    // Facility / Organization (المنشأة التابع لها المستخدم أو الأدمن)
+    public string? Facility { get; set; }
+
     public virtual TechnicianProfile? TechnicianProfile { get; set; }
 }

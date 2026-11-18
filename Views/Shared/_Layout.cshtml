@@ -91,11 +91,6 @@
                     <div class="d-flex align-items-center gap-2">
                         @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin") || User.IsInRole("Manager")))
                         {
-                            <!-- Operations Quick Pill (Only for Facility Admins & Super Admins) -->
-                            <a asp-controller="Dispatcher" asp-action="Index" class="btn btn-sm btn-outline-warning d-none d-md-flex align-items-center gap-1 rounded-pill px-2.5 py-1" style="font-size: 0.78rem;">
-                                <i class="bi bi-lightning-charge-fill"></i> Dispatch Board
-                            </a>
-
                             <!-- Notification Bell Dropdown (Only for Facility Admins & Super Admins) -->
                             <div class="dropdown me-1">
                                 <button class="btn btn-link text-white p-1 position-relative dropdown-toggle shadow-none" type="button" id="navNotificationBell" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">

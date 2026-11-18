@@ -52,6 +52,10 @@ namespace Fixawyy.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Facility")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)

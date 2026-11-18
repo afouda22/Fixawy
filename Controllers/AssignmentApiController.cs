@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Fixawyy.Context;
@@ -15,17 +16,38 @@ public class AssignmentApiController : ControllerBase
 {
     private readonly ITechnicianAssignmentService _assignmentService;
     private readonly AppDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public AssignmentApiController(ITechnicianAssignmentService assignmentService, AppDbContext context)
+    public AssignmentApiController(
+        ITechnicianAssignmentService assignmentService,
+        AppDbContext context,
+        UserManager<ApplicationUser> userManager)
     {
         _assignmentService = assignmentService;
         _context = context;
+        _userManager = userManager;
+    }
+
+    private async Task<string?> GetEffectiveFacilityAsync(string? requestedFacility)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return requestedFacility;
+
+        bool isSuperAdmin = await _userManager.IsInRoleAsync(user, AppRoles.Admin);
+        if (isSuperAdmin)
+        {
+            return requestedFacility;
+        }
+
+        // Facility Admin is strictly locked to their assigned facility
+        return !string.IsNullOrWhiteSpace(user.Facility) ? user.Facility : requestedFacility;
     }
 
     [HttpGet("pending-tickets")]
     public async Task<ActionResult<List<TicketSummaryDto>>> GetPendingTickets([FromQuery] string? facility = null)
     {
-        var tickets = await _assignmentService.GetPendingTicketsAsync(facility);
+        var effectiveFacility = await GetEffectiveFacilityAsync(facility);
+        var tickets = await _assignmentService.GetPendingTicketsAsync(effectiveFacility);
         return Ok(tickets);
     }
 
@@ -78,7 +100,8 @@ public class AssignmentApiController : ControllerBase
     [HttpGet("active")]
     public async Task<ActionResult<List<AssignmentResponseDto>>> GetActiveAssignments([FromQuery] string? facility = null)
     {
-        var list = await _assignmentService.GetActiveAssignmentsAsync(facility);
+        var effectiveFacility = await GetEffectiveFacilityAsync(facility);
+        var list = await _assignmentService.GetActiveAssignmentsAsync(effectiveFacility);
         return Ok(list);
     }
 
@@ -94,6 +117,14 @@ public class AssignmentApiController : ControllerBase
     [HttpGet("facilities")]
     public async Task<ActionResult<List<string>>> GetFacilities()
     {
+        var user = await _userManager.GetUserAsync(User);
+        bool isSuperAdmin = user != null && await _userManager.IsInRoleAsync(user, AppRoles.Admin);
+
+        if (!isSuperAdmin && !string.IsNullOrWhiteSpace(user?.Facility))
+        {
+            return Ok(new List<string> { user.Facility });
+        }
+
         var facilities = await _assignmentService.GetFacilitiesAsync();
         return Ok(facilities);
     }

@@ -17,7 +17,7 @@
                 <i class="bi bi-people-fill text-primary"></i>
                 <span>User &amp; Role Management</span>
             </h2>
-            <p class="text-muted small mb-0">Control system users, assign role privileges, and toggle active status.</p>
+            <p class="text-muted small mb-0">Control system users, assign role privileges, and assign facility administrators.</p>
         </div>
         <div>
             <a asp-action="Users" class="btn btn-outline-modern btn-sm d-inline-flex align-items-center gap-1">
@@ -63,7 +63,7 @@
                         <th class="py-3 text-white">Contact</th>
                         <th class="py-3 text-white">Current Roles</th>
                         <th class="py-3 text-white">Status</th>
-                        <th class="py-3 text-white">Change Role</th>
+                        <th class="py-3 text-white">Change Role &amp; Facility</th>
                         <th class="text-end pe-4 py-3 text-white">Account Action</th>
                     </tr>
                 </thead>
@@ -111,6 +111,10 @@
                                             <span class="badge rounded-pill badge-role-@r.ToLower() fw-semibold px-2 py-1">@r</span>
                                         }
                                     </div>
+                                    @if (!string.IsNullOrEmpty(u.Facility))
+                                    {
+                                        <div class="small text-primary mt-1 fw-bold" style="font-size: 0.72rem;"><i class="bi bi-buildings"></i> @u.Facility</div>
+                                    }
                                 </td>
                                 <td class="py-3">
                                     @if (u.IsActive)
@@ -127,16 +131,23 @@
                                     }
                                 </td>
                                 <td class="py-3">
-                                    <form asp-action="AssignRole" method="post" class="d-flex align-items-center gap-1">
+                                    <form asp-action="AssignRole" method="post" class="d-flex align-items-center gap-1 flex-wrap">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="userId" value="@u.Id" />
-                                        <select name="newRole" class="form-select form-select-sm form-control-modern py-1" style="min-width: 120px;">
+                                        <select name="newRole" class="form-select form-select-sm form-control-modern py-1" style="min-width: 125px;" onchange="toggleFacilitySelect(this)">
                                             @foreach (var r in Model.AvailableRoles)
                                             {
                                                 <option value="@r" selected="@(u.Roles.Contains(r))">@r</option>
                                             }
                                         </select>
-                                        <button type="submit" class="btn btn-sm btn-yellow-modern py-1 px-2.5" title="Assign Role">
+                                        <select name="facility" class="form-select form-select-sm form-control-modern py-1 facility-select" style="min-width: 140px; @(u.Roles.Contains("FacilityAdmin") ? "" : "display:none;")">
+                                            <option value="">-- Choose Facility --</option>
+                                            @foreach (var f in Model.AvailableFacilities)
+                                            {
+                                                <option value="@f" selected="@(u.Facility == f)">@f</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-yellow-modern py-1 px-2.5" title="Save Role &amp; Facility">
                                             Save
                                         </button>
                                     </form>
@@ -148,28 +159,25 @@
                                             <input type="hidden" name="userId" value="@u.Id" />
                                             @if (u.IsActive)
                                             {
-                                                <button type="submit" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Deactivate Account" onclick="return confirm('Are you sure you want to deactivate this account?');">
-                                                    <i class="bi bi-pause-circle"></i>
+                                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Deactivate user" style="border-radius: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                    <i class="bi bi-pause-fill"></i>
                                                 </button>
                                             }
                                             else
                                             {
-                                                <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2" title="Activate Account">
-                                                    <i class="bi bi-play-circle"></i>
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Activate user" style="border-radius: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                    <i class="bi bi-play-fill"></i>
                                                 </button>
                                             }
                                         </form>
 
-                                        @if (!u.Email.Equals("admin@fixawyy.com", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <form asp-action="DeleteUser" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="userId" value="@u.Id" />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Delete User Account" onclick="return confirm('Are you sure you want to permanently DELETE user @u.FullName (@u.Email)? This cannot be undone.');">
-                                                    <i class="bi bi-trash3-fill"></i> Delete
-                                                </button>
-                                            </form>
-                                        }
+                                        <form asp-action="DeleteUser" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this user?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@u.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete user" style="border-radius: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -180,3 +188,20 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function toggleFacilitySelect(roleSelect) {
+            const form = roleSelect.closest('form');
+            if (!form) return;
+            const facilitySelect = form.querySelector('.facility-select');
+            if (facilitySelect) {
+                if (roleSelect.value === 'FacilityAdmin') {
+                    facilitySelect.style.display = 'block';
+                } else {
+                    facilitySelect.style.display = 'none';
+                }
+            }
+        }
+    </script>
+}
