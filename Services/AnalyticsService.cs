@@ -24,7 +24,18 @@ public class AnalyticsService : IAnalyticsService
         if (!string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
             var fac = facility.Trim().ToLower();
-            query = query.Where(t => t.Department.ToLower().Contains(fac));
+            if (fac.Contains("engineer"))
+            {
+                query = query.Where(t => t.Department != null && (t.Department.ToLower().Contains("engineer") || t.Department.ToLower().Contains("faculty")));
+            }
+            else if (fac.Contains("mall"))
+            {
+                query = query.Where(t => t.Department != null && (t.Department.ToLower().Contains("mall") || t.Department.ToLower().Contains("court")));
+            }
+            else
+            {
+                query = query.Where(t => t.Department != null && t.Department.ToLower().Contains(fac));
+            }
         }
         return query;
     }
@@ -111,7 +122,12 @@ public class AnalyticsService : IAnalyticsService
             var assignments = tech.Assignments.AsEnumerable();
             if (fac != null)
             {
-                assignments = assignments.Where(a => a.Ticket != null && a.Ticket.Department.ToLower().Contains(fac));
+                assignments = assignments.Where(a => a.Ticket != null && !string.IsNullOrEmpty(a.Ticket.Department) && (
+                    a.Ticket.Department.ToLower().Contains(fac) ||
+                    fac.Contains(a.Ticket.Department.ToLower()) ||
+                    (fac.Contains("engineer") && a.Ticket.Department.ToLower().Contains("engineer")) ||
+                    (fac.Contains("mall") && a.Ticket.Department.ToLower().Contains("mall"))
+                ));
             }
 
             var assignmentList = assignments.ToList();

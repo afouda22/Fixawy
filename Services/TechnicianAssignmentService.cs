@@ -20,31 +20,37 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<List<TicketSummaryDto>> GetPendingTicketsAsync(string? facility = null)
     {
-        var query = _context.MaintenanceTickets
+        var allPending = await _context.MaintenanceTickets
             .AsNoTracking()
-            .Where(t => t.Status == TicketStatus.Pending);
+            .Where(t => t.Status == TicketStatus.Pending)
+            .OrderByDescending(t => t.Priority)
+            .ThenBy(t => t.CreatedAt)
+            .ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
             var fac = facility.Trim().ToLower();
-            query = query.Where(t => t.Department.ToLower().Contains(fac));
+            allPending = allPending.Where(t =>
+                !string.IsNullOrEmpty(t.Department) && (
+                    t.Department.ToLower().Contains(fac) ||
+                    fac.Contains(t.Department.ToLower()) ||
+                    (fac.Contains("engineer") && (t.Department.ToLower().Contains("engineer") || t.Department.ToLower().Contains("it") || t.Department.ToLower().Contains("building a") || t.Department.ToLower().Contains("stairwell") || t.Department.ToLower().Contains("lab") || t.Department.ToLower().Contains("faculty"))) ||
+                    (fac.Contains("mall") && (t.Department.ToLower().Contains("mall") || t.Department.ToLower().Contains("cafeteria") || t.Department.ToLower().Contains("food") || t.Department.ToLower().Contains("front office") || t.Department.ToLower().Contains("suite") || t.Department.ToLower().Contains("lounge") || t.Department.ToLower().Contains("parking")))
+                )
+            ).ToList();
         }
 
-        return await query
-            .OrderByDescending(t => t.Priority)
-            .ThenBy(t => t.CreatedAt)
-            .Select(t => new TicketSummaryDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Department = t.Department,
-                RequiredSkill = t.RequiredSkill,
-                Priority = t.Priority.ToString(),
-                Status = t.Status.ToString(),
-                CreatedAt = t.CreatedAt
-            })
-            .ToListAsync();
+        return allPending.Select(t => new TicketSummaryDto
+        {
+            Id = t.Id,
+            Title = t.Title,
+            Description = t.Description,
+            Department = t.Department,
+            RequiredSkill = t.RequiredSkill,
+            Priority = t.Priority.ToString(),
+            Status = t.Status.ToString(),
+            CreatedAt = t.CreatedAt
+        }).ToList();
     }
 
     public static bool IsSpecialtyMatch(string? requiredSkill, IEnumerable<string> technicianSpecialties)
@@ -407,34 +413,40 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<List<AssignmentResponseDto>> GetActiveAssignmentsAsync(string? facility = null)
     {
-        var query = _context.Assignments
+        var allActive = await _context.Assignments
             .AsNoTracking()
             .Include(a => a.Ticket)
             .Include(a => a.Technician)
                 .ThenInclude(tp => tp!.User)
-            .Where(a => a.Status == "Active");
+            .Where(a => a.Status == "Active")
+            .OrderByDescending(a => a.AssignedAt)
+            .ToListAsync();
 
         if (!string.IsNullOrWhiteSpace(facility) && !facility.Equals("All", StringComparison.OrdinalIgnoreCase))
         {
             var fac = facility.Trim().ToLower();
-            query = query.Where(a => a.Ticket != null && a.Ticket.Department.ToLower().Contains(fac));
+            allActive = allActive.Where(a =>
+                a.Ticket != null && !string.IsNullOrEmpty(a.Ticket.Department) && (
+                    a.Ticket.Department.ToLower().Contains(fac) ||
+                    fac.Contains(a.Ticket.Department.ToLower()) ||
+                    (fac.Contains("engineer") && (a.Ticket.Department.ToLower().Contains("engineer") || a.Ticket.Department.ToLower().Contains("utility") || a.Ticket.Department.ToLower().Contains("tower") || a.Ticket.Department.ToLower().Contains("medical") || a.Ticket.Department.ToLower().Contains("chiller"))) ||
+                    (fac.Contains("mall") && (a.Ticket.Department.ToLower().Contains("mall") || a.Ticket.Department.ToLower().Contains("parking") || a.Ticket.Department.ToLower().Contains("lobby") || a.Ticket.Department.ToLower().Contains("cafeteria")))
+                )
+            ).ToList();
         }
 
-        return await query
-            .OrderByDescending(a => a.AssignedAt)
-            .Select(a => new AssignmentResponseDto
-            {
-                AssignmentId = a.Id,
-                TicketId = a.TicketId,
-                TicketTitle = a.Ticket != null ? a.Ticket.Title : string.Empty,
-                TechnicianId = a.TechnicianProfileId,
-                TechnicianName = a.Technician != null && a.Technician.User != null ? a.Technician.User.FullName : $"Tech #{a.TechnicianProfileId}",
-                AssignedAt = a.AssignedAt,
-                MatchScore = a.MatchScore,
-                Status = a.Status,
-                Notes = a.Notes
-            })
-            .ToListAsync();
+        return allActive.Select(a => new AssignmentResponseDto
+        {
+            AssignmentId = a.Id,
+            TicketId = a.TicketId,
+            TicketTitle = a.Ticket != null ? a.Ticket.Title : string.Empty,
+            TechnicianId = a.TechnicianProfileId,
+            TechnicianName = a.Technician != null && a.Technician.User != null ? a.Technician.User.FullName : $"Tech #{a.TechnicianProfileId}",
+            AssignedAt = a.AssignedAt,
+            MatchScore = a.MatchScore,
+            Status = a.Status,
+            Notes = a.Notes
+        }).ToList();
     }
 
     public async Task<bool> ResolveAssignmentAsync(int assignmentId)

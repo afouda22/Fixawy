@@ -463,25 +463,49 @@
 
         // --- 5. Load Pending Tickets ---
         async function loadPendingTickets() {
+            const list = document.getElementById('pendingTicketsList');
             try {
                 const url = currentFacility && currentFacility !== 'All'
                     ? `/api/assignment/pending-tickets?facility=${encodeURIComponent(currentFacility)}`
                     : '/api/assignment/pending-tickets';
 
                 const res = await fetch(url);
+                if (!res.ok) {
+                    console.error("Error loading pending tickets (status):", res.status);
+                    if (list) {
+                        list.innerHTML = `
+                            <div class="p-4 text-center text-secondary border rounded-3 bg-light">
+                                <i class="bi bi-exclamation-circle text-warning fs-3 d-block mb-2"></i>
+                                <h6 class="fw-bold mb-1">Could not fetch pending tickets</h6>
+                                <p class="small text-secondary mb-2">Server responded with HTTP ${res.status}</p>
+                                <button onclick="loadPendingTickets()" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Try Again
+                                </button>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+
                 const tickets = await res.json();
-                const list = document.getElementById('pendingTicketsList');
+                if (!Array.isArray(tickets)) {
+                    console.error("Expected array but got:", tickets);
+                    return;
+                }
+
                 const badgeNav = document.getElementById('pendingBadgeNav');
                 if (badgeNav) badgeNav.innerText = tickets.length;
 
                 if (tickets.length === 0) {
-                    list.innerHTML = `
-                        <div class="p-5 text-center text-secondary border rounded-3 bg-light">
-                            <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
-                            <h6 class="fw-bold">All caught up!</h6>
-                            <p class="small text-secondary mb-0">No pending tickets awaiting assignment in this facility.</p>
-                        </div>
-                    `;
+                    if (list) {
+                        list.innerHTML = `
+                            <div class="p-5 text-center text-secondary border rounded-3 bg-light">
+                                <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
+                                <h6 class="fw-bold">All caught up!</h6>
+                                <p class="small text-secondary mb-0">No pending tickets awaiting assignment in this facility.</p>
+                            </div>
+                        `;
+                    }
                     return;
                 }
 
@@ -492,67 +516,89 @@
                     Low: 'bg-secondary text-white'
                 };
 
-                list.innerHTML = tickets.map(t => `
-                    <div draggable="true" ondragstart="handleDragStart(event, ${t.id}, '${t.title.replace(/'/g, "\\'")}', '${(t.requiredSkill || '').replace(/'/g, "\\'")}')" class="card border rounded-3 shadow-sm p-3 hover-shadow transition-all" style="cursor: grab;">
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                            <div class="space-y-1">
-                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                    <span class="badge ${priorityBadgeClass[t.priority] || 'bg-secondary'} rounded-pill px-2.5">${t.priority}</span>
-                                    <span class="badge bg-body-secondary text-secondary rounded-pill px-2.5"><i class="bi bi-tools me-1"></i>${t.requiredSkill}</span>
-                                    <span class="text-secondary small"><i class="bi bi-geo-alt me-1"></i>${t.department}</span>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle small"><i class="bi bi-hand-index-thumb me-1"></i>Drag to Tech</span>
+                if (list) {
+                    list.innerHTML = tickets.map(t => `
+                        <div draggable="true" ondragstart="handleDragStart(event, ${t.id}, '${t.title.replace(/'/g, "\\'")}', '${(t.requiredSkill || '').replace(/'/g, "\\'")}')" class="card border rounded-3 shadow-sm p-3 hover-shadow transition-all" style="cursor: grab;">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                <div class="space-y-1">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                        <span class="badge ${priorityBadgeClass[t.priority] || 'bg-secondary'} rounded-pill px-2.5">${t.priority}</span>
+                                        <span class="badge bg-body-secondary text-secondary rounded-pill px-2.5"><i class="bi bi-tools me-1"></i>${t.requiredSkill}</span>
+                                        <span class="text-secondary small"><i class="bi bi-geo-alt me-1"></i>${t.department}</span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small"><i class="bi bi-hand-index-thumb me-1"></i>Drag to Tech</span>
+                                    </div>
+                                    <h6 class="fw-bold mb-1">${t.title}</h6>
+                                    <p class="text-secondary small mb-0">${t.description}</p>
                                 </div>
-                                <h6 class="fw-bold mb-1">${t.title}</h6>
-                                <p class="text-secondary small mb-0">${t.description}</p>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 align-self-end align-self-md-center">
-                                <button onclick="openSmartSuggest(${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="btn btn-sm btn-outline-primary rounded-3 d-flex align-items-center gap-1">
-                                    <i class="bi bi-lightbulb"></i> Match
-                                </button>
-                                <button onclick="triggerAutoAssign(${t.id})" class="btn btn-sm btn-primary rounded-3 d-flex align-items-center gap-1 shadow-sm">
-                                    <i class="bi bi-lightning-charge-fill"></i> Auto Assign
-                                </button>
+                                <div class="d-flex align-items-center gap-2 align-self-end align-self-md-center">
+                                    <button onclick="openSmartSuggest(${t.id}, '${t.title.replace(/'/g, "\\'")}')" class="btn btn-sm btn-outline-primary rounded-3 d-flex align-items-center gap-1">
+                                        <i class="bi bi-lightbulb"></i> Match
+                                    </button>
+                                    <button onclick="triggerAutoAssign(${t.id})" class="btn btn-sm btn-primary rounded-3 d-flex align-items-center gap-1 shadow-sm">
+                                        <i class="bi bi-lightning-charge-fill"></i> Auto Assign
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
             } catch (err) {
                 console.error("Error loading pending tickets:", err);
+                if (list) {
+                    list.innerHTML = `
+                        <div class="p-4 text-center text-danger border rounded-3 bg-danger-subtle">
+                            <i class="bi bi-wifi-off fs-3 d-block mb-2"></i>
+                            <h6 class="fw-bold mb-1">Failed to connect to server</h6>
+                            <p class="small text-secondary mb-2">${err.message || 'Please check your connection'}</p>
+                            <button onclick="loadPendingTickets()" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Retry
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
 
         // --- 6. Load Active Dispatched Jobs ---
         async function loadActiveAssignments() {
+            const list = document.getElementById('activeAssignmentsList');
             try {
                 const url = currentFacility && currentFacility !== 'All'
                     ? `/api/assignment/active?facility=${encodeURIComponent(currentFacility)}`
                     : '/api/assignment/active';
 
                 const res = await fetch(url);
+                if (!res.ok) {
+                    console.error("Error loading active assignments:", res.status);
+                    return;
+                }
                 const assignments = await res.json();
-                const list = document.getElementById('activeAssignmentsList');
+                if (!Array.isArray(assignments)) return;
+
                 const countBadge = document.getElementById('activeJobsCount');
                 if (countBadge) countBadge.innerText = `${assignments.length} Active`;
 
                 if (assignments.length === 0) {
-                    list.innerHTML = `<div class="text-center py-4 text-secondary small">No active dispatched operations for this facility</div>`;
+                    if (list) list.innerHTML = `<div class="text-center py-4 text-secondary small">No active dispatched operations for this facility</div>`;
                     return;
                 }
 
-                list.innerHTML = assignments.map(a => `
-                    <div class="p-3 rounded-3 border bg-body-secondary-subtle">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <h6 class="fw-bold small mb-0 text-truncate" style="max-width: 220px;" title="${a.ticketTitle}">${a.ticketTitle}</h6>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">${a.matchScore}% Match</span>
+                if (list) {
+                    list.innerHTML = assignments.map(a => `
+                        <div class="p-3 rounded-3 border bg-body-secondary-subtle">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold small mb-0 text-truncate" style="max-width: 220px;" title="${a.ticketTitle}">${a.ticketTitle}</h6>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">${a.matchScore}% Match</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center text-secondary small mt-2">
+                                <span><i class="bi bi-person-circle me-1"></i>${a.technicianName}</span>
+                                <button onclick="resolveAssignment(${a.assignmentId})" class="btn btn-xs btn-success rounded-2 px-2 py-1 small fw-bold d-flex align-items-center gap-1">
+                                    <i class="bi bi-check2"></i> Complete
+                                </button>
+                            </div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center text-secondary small mt-2">
-                            <span><i class="bi bi-person-circle me-1"></i>${a.technicianName}</span>
-                            <button onclick="resolveAssignment(${a.assignmentId})" class="btn btn-xs btn-success rounded-2 px-2 py-1 small fw-bold d-flex align-items-center gap-1">
-                                <i class="bi bi-check2"></i> Complete
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
             } catch (err) {
                 console.error("Error loading active assignments:", err);
             }
@@ -560,38 +606,51 @@
 
         // --- 7. Technicians Drop Target List ---
         async function loadTechniciansDropList() {
+            const list = document.getElementById('techniciansDropList');
             try {
                 const url = currentFacility && currentFacility !== 'All'
                     ? `/api/analytics/technician-rankings?facility=${encodeURIComponent(currentFacility)}`
                     : '/api/analytics/technician-rankings';
 
                 const res = await fetch(url);
+                if (!res.ok) {
+                    console.error("Error loading technicians roster:", res.status);
+                    if (list) {
+                        list.innerHTML = `<div class="text-center py-4 text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>Failed to load technicians</div>`;
+                    }
+                    return;
+                }
                 const techs = await res.json();
-                const list = document.getElementById('techniciansDropList');
+                if (!Array.isArray(techs)) return;
 
-                list.innerHTML = techs.map(t => `
-                    <div data-tech-id="${t.technicianId}"
-                         data-tech-name="${t.fullName.replace(/'/g, "\\'")}"
-                         data-tech-specs="${(t.specialization || '').replace(/'/g, "\\'")}"
-                         ondragover="handleDragOver(event, this)" 
-                         ondragleave="handleDragLeave(this)" 
-                         ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName.replace(/'/g, "\\'")}', '${(t.specialization || '').replace(/'/g, "\\'")}')" 
-                         class="p-2.5 rounded-3 border d-flex justify-content-between align-items-center transition-all bg-body tech-drop-target" 
-                         style="transition: all 0.2s ease;">
-                        <div>
-                            <div class="fw-bold small text-truncate" style="max-width: 200px;">${t.fullName}</div>
-                            <div class="text-secondary" style="font-size: 0.72rem;">${t.specialization} &bull; <span class="text-warning">★ ${t.rating.toFixed(1)}</span></div>
+                if (list) {
+                    list.innerHTML = techs.map(t => `
+                        <div data-tech-id="${t.technicianId}"
+                             data-tech-name="${t.fullName.replace(/'/g, "\\'")}"
+                             data-tech-specs="${(t.specialization || '').replace(/'/g, "\\'")}"
+                             ondragover="handleDragOver(event, this)" 
+                             ondragleave="handleDragLeave(this)" 
+                             ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName.replace(/'/g, "\\'")}', '${(t.specialization || '').replace(/'/g, "\\'")}')" 
+                             class="p-2.5 rounded-3 border d-flex justify-content-between align-items-center transition-all bg-body tech-drop-target" 
+                             style="transition: all 0.2s ease;">
+                            <div>
+                                <div class="fw-bold small text-truncate" style="max-width: 200px;">${t.fullName}</div>
+                                <div class="text-secondary" style="font-size: 0.72rem;">${t.specialization} &bull; <span class="text-warning">★ ${t.rating.toFixed(1)}</span></div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge ${t.activeTickets > 0 ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success'} rounded-pill" style="font-size: 0.7rem;">
+                                    ${t.activeTickets} Active
+                                </span>
+                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-arrow-down-circle"></i> Drop</span>
+                            </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge ${t.activeTickets > 0 ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success'} rounded-pill" style="font-size: 0.7rem;">
-                                ${t.activeTickets} Active
-                            </span>
-                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;"><i class="bi bi-arrow-down-circle"></i> Drop</span>
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
             } catch (err) {
                 console.error("Error loading technicians list:", err);
+                if (list) {
+                    list.innerHTML = `<div class="text-center py-4 text-danger small">Error loading technicians</div>`;
+                }
             }
         }
 
@@ -934,10 +993,16 @@
             }
         }
 
-        // Initial Load on page ready
-        document.addEventListener('DOMContentLoaded', () => {
+        // Initial Load on page ready (safely handles if DOM is already loaded)
+        function initDispatcherApp() {
             loadFacilitiesList();
             refreshAll();
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDispatcherApp);
+        } else {
+            initDispatcherApp();
+        }
     </script>
 }
