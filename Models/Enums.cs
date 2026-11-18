@@ -1,4 +1,4 @@
-﻿namespace SmartMaintenance.Dispatcher.Models;
+namespace Fixawyy.Models;
 
 public enum TicketPriority
 {

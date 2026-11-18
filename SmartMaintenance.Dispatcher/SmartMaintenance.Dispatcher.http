@@ -1,6 +1,0 @@
-@SmartMaintenance.Dispatcher_HostAddress = http://localhost:5151
-
-GET {{SmartMaintenance.Dispatcher_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

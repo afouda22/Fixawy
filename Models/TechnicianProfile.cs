@@ -16,4 +16,5 @@ public class TechnicianProfile
 
     public virtual ICollection<TechnicianSpecialty> TechnicianSpecialties { get; set; } = new List<TechnicianSpecialty>();
     public virtual ICollection<TechnicianSchedule> Schedules { get; set; } = new List<TechnicianSchedule>();
+    public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 }

@@ -1,4 +1,4 @@
-﻿namespace SmartMaintenance.Dispatcher.Models;
+namespace Fixawyy.Models;
 
 public class MaintenanceTicket
 {
@@ -19,5 +19,5 @@ public class MaintenanceTicket
     public DateTime? ResolvedAt { get; set; }
 
     // علاقة التذكرة بعمليات التعيين
-    public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+    public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 }

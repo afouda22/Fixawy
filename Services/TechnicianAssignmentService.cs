@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using SmartMaintenance.Dispatcher.Data;
-using SmartMaintenance.Dispatcher.DTOs;
-using SmartMaintenance.Dispatcher.Hubs;
-using SmartMaintenance.Dispatcher.Models;
+using Fixawyy.Context;
+using Fixawyy.DTOs;
+using Fixawyy.Hubs;
+using Fixawyy.Models;
 
-namespace SmartMaintenance.Dispatcher.Services;
+namespace Fixawyy.Services;
 
 public class TechnicianAssignmentService : ITechnicianAssignmentService
 {
@@ -20,7 +20,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<List<TicketSummaryDto>> GetPendingTicketsAsync()
     {
-        return await _context.Tickets
+        return await _context.MaintenanceTickets
             .AsNoTracking()
             .Where(t => t.Status == TicketStatus.Pending)
             .OrderByDescending(t => t.Priority)
@@ -41,35 +41,60 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<List<TechnicianMatchResultDto>> GetMatchingTechniciansAsync(int ticketId)
     {
-        var ticket = await _context.Tickets.FindAsync(ticketId);
+        var ticket = await _context.MaintenanceTickets.FindAsync(ticketId);
         if (ticket == null)
         {
             throw new ArgumentException($"Ticket with ID {ticketId} not found.");
         }
 
-        // 1. الفلتر الإجباري (Hard Filter): فني متاح + تخصص يطابق المهارة المطلوبة
-        var candidates = await _context.Technicians
-            .Where(t => t.IsAvailable && t.Specialization.ToLower() == ticket.RequiredSkill.ToLower())
+        var allTechnicians = await _context.TechnicianProfiles
+            .Include(tp => tp.User)
+            .Include(tp => tp.TechnicianSpecialties)
+                .ThenInclude(ts => ts.Specialty)
+            .Include(tp => tp.Assignments)
+            .Where(tp => tp.IsAvailable)
             .ToListAsync();
 
-        if (!candidates.Any())
+        if (!allTechnicians.Any())
         {
             return new List<TechnicianMatchResultDto>();
         }
 
+        // مطابقة التخصص مع المهارة المطلوبة
+        var normalizedRequired = ticket.RequiredSkill.Trim().ToLower();
+        var candidates = allTechnicians.Where(tp =>
+            tp.TechnicianSpecialties.Any(ts =>
+                ts.Specialty != null && (
+                    ts.Specialty.Name.ToLower().Contains(normalizedRequired) ||
+                    normalizedRequired.Contains(ts.Specialty.Name.ToLower())
+                )
+            )
+        ).ToList();
+
+        bool hasSkillMatch = candidates.Any();
+        var pool = hasSkillMatch ? candidates : allTechnicians;
+
         var results = new List<TechnicianMatchResultDto>();
 
-        foreach (var tech in candidates)
+        foreach (var tech in pool)
         {
             var reasons = new List<string>();
+            var specNames = string.Join(", ", tech.TechnicianSpecialties
+                .Where(ts => ts.Specialty != null)
+                .Select(ts => ts.Specialty!.Name));
 
-            // 1. مهارة مطابقة (40 نقطة)
-            double skillScore = 40.0;
-            reasons.Add($"Matching specialization: {tech.Specialization} (+40 pts)");
+            if (string.IsNullOrEmpty(specNames)) specNames = "General Maintenance";
+
+            // 1. التخصص (حتى 40 نقطة)
+            double skillScore = hasSkillMatch ? 40.0 : 15.0;
+            reasons.Add(hasSkillMatch
+                ? $"Matching specialization: {specNames} (+40 pts)"
+                : $"Alternative specialization: {specNames} (+15 pts)");
 
             // 2. توزيع ضغط العمل (Workload Balance - حتى 35 نقطة)
-            double workloadScore = Math.Max(0.0, (5 - tech.ActiveTicketsCount) * 7.0);
-            reasons.Add($"Workload capacity: {tech.ActiveTicketsCount} active jobs (+{workloadScore:0.0} pts)");
+            int activeJobs = tech.Assignments.Count(a => a.Status == "Active");
+            double workloadScore = Math.Max(0.0, (5 - activeJobs) * 7.0);
+            reasons.Add($"Workload capacity: {activeJobs} active jobs (+{workloadScore:0.0} pts)");
 
             // 3. تقييم الفني (Rating - حتى 25 نقطة)
             double ratingScore = Math.Round((tech.Rating / 5.0) * 25.0, 1);
@@ -81,10 +106,10 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             results.Add(new TechnicianMatchResultDto
             {
                 TechnicianId = tech.Id,
-                FullName = tech.FullName,
-                Specialization = tech.Specialization,
+                FullName = tech.User?.FullName ?? $"Technician #{tech.Id}",
+                Specialization = specNames,
                 Rating = tech.Rating,
-                ActiveTicketsCount = tech.ActiveTicketsCount,
+                ActiveTicketsCount = activeJobs,
                 MatchScore = totalScore,
                 MatchReasons = reasons
             });
@@ -101,7 +126,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<AssignmentResponseDto> AutoAssignTechnicianAsync(int ticketId, string? notes = null)
     {
-        var ticket = await _context.Tickets.FindAsync(ticketId);
+        var ticket = await _context.MaintenanceTickets.FindAsync(ticketId);
         if (ticket == null)
         {
             throw new ArgumentException($"Ticket with ID {ticketId} not found.");
@@ -115,21 +140,24 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         var candidates = await GetMatchingTechniciansAsync(ticketId);
         if (!candidates.Any())
         {
-            throw new InvalidOperationException($"No available technicians found with specialization: {ticket.RequiredSkill}");
+            throw new InvalidOperationException($"No available technicians found for skill: {ticket.RequiredSkill}");
         }
 
         var bestMatch = candidates.First();
-        var technician = await _context.Technicians.FindAsync(bestMatch.TechnicianId);
+        var technician = await _context.TechnicianProfiles
+            .Include(tp => tp.User)
+            .FirstOrDefaultAsync(tp => tp.Id == bestMatch.TechnicianId);
+
         if (technician == null)
         {
-            throw new InvalidOperationException("Selected technician could not be found.");
+            throw new InvalidOperationException("Selected technician profile could not be found.");
         }
 
         // 1. إنشاء سجل التعيين
         var assignment = new Assignment
         {
             TicketId = ticket.Id,
-            TechnicianId = technician.Id,
+            TechnicianProfileId = technician.Id,
             AssignedAt = DateTime.UtcNow,
             Status = "Active",
             MatchScore = bestMatch.MatchScore,
@@ -141,14 +169,12 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         // 2. تحديث حالة التذكرة
         ticket.Status = TicketStatus.Assigned;
 
-        // 3. زيادة عدد المهام النشطة للفني
-        technician.ActiveTicketsCount += 1;
-
-        // 4. تسجيل إشعار في سجل الإشعارات
+        // 3. تسجيل إشعار في سجل الإشعارات
+        var techName = technician.User?.FullName ?? $"Technician #{technician.Id}";
         var notification = new NotificationHistory
         {
             TargetRole = "Technician",
-            RecipientUserId = technician.Id,
+            RecipientUserId = technician.UserId,
             Title = "New Ticket Assigned",
             Message = $"You have been assigned ticket: '{ticket.Title}' ({ticket.Priority} Priority).",
             EventType = "NewAssignment",
@@ -160,14 +186,14 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
         await _context.SaveChangesAsync();
 
-        // 5. إطلاق أحداث الـ SignalR الحية (Real-Time Push Events)
+        // 4. إطلاق أحداث الـ SignalR الحية (Real-Time Push Events)
         await _hubContext.Clients.All.SendAsync("NewAssignment", new
         {
             assignmentId = assignment.Id,
             ticketId = ticket.Id,
             ticketTitle = ticket.Title,
             technicianId = technician.Id,
-            technicianName = technician.FullName,
+            technicianName = techName,
             assignedAt = assignment.AssignedAt,
             matchScore = assignment.MatchScore
         });
@@ -196,7 +222,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             TicketId = ticket.Id,
             TicketTitle = ticket.Title,
             TechnicianId = technician.Id,
-            TechnicianName = technician.FullName,
+            TechnicianName = techName,
             AssignedAt = assignment.AssignedAt,
             MatchScore = assignment.MatchScore,
             Status = assignment.Status,
@@ -206,26 +232,29 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
     public async Task<AssignmentResponseDto> ManualAssignTechnicianAsync(int ticketId, int technicianId, string? notes = null)
     {
-        var ticket = await _context.Tickets.FindAsync(ticketId);
+        var ticket = await _context.MaintenanceTickets.FindAsync(ticketId);
         if (ticket == null)
         {
             throw new ArgumentException($"Ticket with ID {ticketId} not found.");
         }
 
-        var technician = await _context.Technicians.FindAsync(technicianId);
+        var technician = await _context.TechnicianProfiles
+            .Include(tp => tp.User)
+            .FirstOrDefaultAsync(tp => tp.Id == technicianId);
+
         if (technician == null)
         {
-            throw new ArgumentException($"Technician with ID {technicianId} not found.");
+            throw new ArgumentException($"Technician Profile with ID {technicianId} not found.");
         }
 
         var suggestions = await GetMatchingTechniciansAsync(ticketId);
         var match = suggestions.FirstOrDefault(s => s.TechnicianId == technicianId);
-        double score = match?.MatchScore ?? 70.0;
+        double score = match?.MatchScore ?? 75.0;
 
         var assignment = new Assignment
         {
             TicketId = ticket.Id,
-            TechnicianId = technician.Id,
+            TechnicianProfileId = technician.Id,
             AssignedAt = DateTime.UtcNow,
             Status = "Active",
             MatchScore = score,
@@ -234,14 +263,14 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
 
         _context.Assignments.Add(assignment);
         ticket.Status = TicketStatus.Assigned;
-        technician.ActiveTicketsCount += 1;
 
+        var techName = technician.User?.FullName ?? $"Technician #{technician.Id}";
         var notification = new NotificationHistory
         {
             TargetRole = "Technician",
-            RecipientUserId = technician.Id,
+            RecipientUserId = technician.UserId,
             Title = "New Ticket Assigned",
-            Message = $"You were manually assigned ticket: '{ticket.Title}' by Manager.",
+            Message = $"You were manually assigned ticket: '{ticket.Title}' by Operations Manager.",
             EventType = "NewAssignment",
             RelatedTicketId = ticket.Id,
             IsRead = false,
@@ -258,7 +287,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             ticketId = ticket.Id,
             ticketTitle = ticket.Title,
             technicianId = technician.Id,
-            technicianName = technician.FullName,
+            technicianName = techName,
             assignedAt = assignment.AssignedAt,
             matchScore = assignment.MatchScore
         });
@@ -287,7 +316,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             TicketId = ticket.Id,
             TicketTitle = ticket.Title,
             TechnicianId = technician.Id,
-            TechnicianName = technician.FullName,
+            TechnicianName = techName,
             AssignedAt = assignment.AssignedAt,
             MatchScore = assignment.MatchScore,
             Status = assignment.Status,
@@ -301,6 +330,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             .AsNoTracking()
             .Include(a => a.Ticket)
             .Include(a => a.Technician)
+                .ThenInclude(tp => tp!.User)
             .Where(a => a.Status == "Active")
             .OrderByDescending(a => a.AssignedAt)
             .Select(a => new AssignmentResponseDto
@@ -308,8 +338,8 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
                 AssignmentId = a.Id,
                 TicketId = a.TicketId,
                 TicketTitle = a.Ticket != null ? a.Ticket.Title : string.Empty,
-                TechnicianId = a.TechnicianId,
-                TechnicianName = a.Technician != null ? a.Technician.FullName : string.Empty,
+                TechnicianId = a.TechnicianProfileId,
+                TechnicianName = a.Technician != null && a.Technician.User != null ? a.Technician.User.FullName : $"Tech #{a.TechnicianProfileId}",
                 AssignedAt = a.AssignedAt,
                 MatchScore = a.MatchScore,
                 Status = a.Status,
@@ -323,6 +353,7 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
         var assignment = await _context.Assignments
             .Include(a => a.Ticket)
             .Include(a => a.Technician)
+                .ThenInclude(tp => tp!.User)
             .FirstOrDefaultAsync(a => a.Id == assignmentId);
 
         if (assignment == null) return false;
@@ -336,16 +367,13 @@ public class TechnicianAssignmentService : ITechnicianAssignmentService
             assignment.Ticket.ResolvedAt = DateTime.UtcNow;
         }
 
-        if (assignment.Technician != null && assignment.Technician.ActiveTicketsCount > 0)
-        {
-            assignment.Technician.ActiveTicketsCount -= 1;
-        }
+        var techName = assignment.Technician?.User?.FullName ?? $"Tech #{assignment.TechnicianProfileId}";
 
         var notification = new NotificationHistory
         {
             TargetRole = "All",
             Title = "Ticket Resolved",
-            Message = $"Ticket '{assignment.Ticket?.Title}' has been resolved by {assignment.Technician?.FullName}.",
+            Message = $"Ticket '{assignment.Ticket?.Title}' has been resolved by {techName}.",
             EventType = "StatusChanged",
             RelatedTicketId = assignment.TicketId,
             IsRead = false,

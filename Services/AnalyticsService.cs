@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using SmartMaintenance.Dispatcher.Data;
-using SmartMaintenance.Dispatcher.DTOs;
-using SmartMaintenance.Dispatcher.Models;
+using Fixawyy.Context;
+using Fixawyy.DTOs;
+using Fixawyy.Models;
 
-namespace SmartMaintenance.Dispatcher.Services;
+namespace Fixawyy.Services;
 
 public class AnalyticsService : IAnalyticsService
 {
@@ -20,14 +20,14 @@ public class AnalyticsService : IAnalyticsService
 
     public async Task<KpiSummaryDto> GetKpiSummaryAsync()
     {
-        var totalTickets = await _context.Tickets.CountAsync();
-        var pendingTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Pending);
-        var inProgressTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.InProgress || t.Status == TicketStatus.Assigned);
-        var resolvedTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Resolved || t.Status == TicketStatus.Closed);
-        var totalTechnicians = await _context.Technicians.CountAsync();
+        var totalTickets = await _context.MaintenanceTickets.CountAsync();
+        var pendingTickets = await _context.MaintenanceTickets.CountAsync(t => t.Status == TicketStatus.Pending);
+        var inProgressTickets = await _context.MaintenanceTickets.CountAsync(t => t.Status == TicketStatus.InProgress || t.Status == TicketStatus.Assigned);
+        var resolvedTickets = await _context.MaintenanceTickets.CountAsync(t => t.Status == TicketStatus.Resolved || t.Status == TicketStatus.Closed);
+        var totalTechnicians = await _context.TechnicianProfiles.CountAsync();
 
         // حساب متوسط وقت الحل للتذاكر المنجزة بالساعات
-        var resolvedList = await _context.Tickets
+        var resolvedList = await _context.MaintenanceTickets
             .Where(t => t.ResolvedAt != null)
             .Select(t => new { t.CreatedAt, ResolvedAt = t.ResolvedAt!.Value })
             .ToListAsync();
@@ -51,11 +51,11 @@ public class AnalyticsService : IAnalyticsService
 
     public async Task<List<DepartmentBreakdownDto>> GetTicketsByDepartmentAsync()
     {
-        return await _context.Tickets
+        return await _context.MaintenanceTickets
             .GroupBy(t => t.Department)
             .Select(g => new DepartmentBreakdownDto
             {
-                Department = g.Key,
+                Department = string.IsNullOrEmpty(g.Key) ? "General" : g.Key,
                 TicketCount = g.Count()
             })
             .OrderByDescending(d => d.TicketCount)
@@ -64,7 +64,7 @@ public class AnalyticsService : IAnalyticsService
 
     public async Task<List<StatusBreakdownDto>> GetTicketsByStatusAsync()
     {
-        return await _context.Tickets
+        return await _context.MaintenanceTickets
             .GroupBy(t => t.Status)
             .Select(g => new StatusBreakdownDto
             {
@@ -76,9 +76,12 @@ public class AnalyticsService : IAnalyticsService
 
     public async Task<List<TechnicianRankingDto>> GetTechnicianRankingsAsync()
     {
-        var technicians = await _context.Technicians
-            .Include(t => t.Assignments)
-            .ThenInclude(a => a.Ticket)
+        var technicians = await _context.TechnicianProfiles
+            .Include(tp => tp.User)
+            .Include(tp => tp.TechnicianSpecialties)
+                .ThenInclude(ts => ts.Specialty)
+            .Include(tp => tp.Assignments)
+                .ThenInclude(a => a.Ticket)
             .ToListAsync();
 
         var result = new List<TechnicianRankingDto>();
@@ -95,11 +98,17 @@ public class AnalyticsService : IAnalyticsService
                 avgHours = Math.Round(completedAssignments.Average(a => (a.Ticket!.ResolvedAt!.Value - a.AssignedAt).TotalHours), 1);
             }
 
+            var specNames = string.Join(", ", tech.TechnicianSpecialties
+                .Where(ts => ts.Specialty != null)
+                .Select(ts => ts.Specialty!.Name));
+
+            if (string.IsNullOrEmpty(specNames)) specNames = "General";
+
             result.Add(new TechnicianRankingDto
             {
                 TechnicianId = tech.Id,
-                FullName = tech.FullName,
-                Specialization = tech.Specialization,
+                FullName = tech.User?.FullName ?? $"Technician #{tech.Id}",
+                Specialization = specNames,
                 Rating = tech.Rating,
                 CompletedTickets = completedAssignments.Count,
                 ActiveTickets = tech.Assignments.Count(a => a.Status == "Active"),
@@ -115,9 +124,10 @@ public class AnalyticsService : IAnalyticsService
 
     public async Task<byte[]> GenerateCsvReportAsync()
     {
-        var tickets = await _context.Tickets
+        var tickets = await _context.MaintenanceTickets
             .Include(t => t.Assignments)
-            .ThenInclude(a => a.Technician)
+                .ThenInclude(a => a.Technician)
+                    .ThenInclude(tp => tp!.User)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
@@ -126,7 +136,8 @@ public class AnalyticsService : IAnalyticsService
 
         foreach (var t in tickets)
         {
-            var techName = t.Assignments.OrderByDescending(a => a.AssignedAt).FirstOrDefault()?.Technician?.FullName ?? "Unassigned";
+            var assigned = t.Assignments.OrderByDescending(a => a.AssignedAt).FirstOrDefault();
+            var techName = assigned?.Technician?.User?.FullName ?? "Unassigned";
             double duration = t.ResolvedAt.HasValue ? Math.Round((t.ResolvedAt.Value - t.CreatedAt).TotalHours, 1) : 0;
             var resolvedStr = t.ResolvedAt.HasValue ? t.ResolvedAt.Value.ToString("yyyy-MM-dd HH:mm") : "N/A";
 
@@ -157,8 +168,8 @@ public class AnalyticsService : IAnalyticsService
                     {
                         row.RelativeItem().Column(c =>
                         {
-                            c.Item().Text("Smart Maintenance Platform").FontSize(20).Bold().FontColor(Colors.Blue.Darken3);
-                            c.Item().Text("Executive Operations & Analytics Report").FontSize(11).FontColor(Colors.Grey.Medium);
+                            c.Item().Text("Fixawyy Maintenance Platform").FontSize(20).Bold().FontColor(Colors.Blue.Darken3);
+                            c.Item().Text("Executive Operations, Dispatcher & Analytics Report").FontSize(11).FontColor(Colors.Grey.Medium);
                         });
 
                         row.ConstantItem(150).Column(c =>
@@ -259,7 +270,7 @@ public class AnalyticsService : IAnalyticsService
 
                 page.Footer().AlignCenter().Text(x =>
                 {
-                    x.Span("Smart Maintenance Platform - Page ");
+                    x.Span("Fixawyy Platform - Page ");
                     x.CurrentPageNumber();
                     x.Span(" of ");
                     x.TotalPages();

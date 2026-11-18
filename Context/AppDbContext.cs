@@ -14,6 +14,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Specialty> Specialties => Set<Specialty>();
     public DbSet<TechnicianSpecialty> TechnicianSpecialties => Set<TechnicianSpecialty>();
     public DbSet<TechnicianSchedule> TechnicianSchedules => Set<TechnicianSchedule>();
+    public DbSet<MaintenanceTicket> MaintenanceTickets => Set<MaintenanceTicket>();
+    public DbSet<Assignment> Assignments => Set<Assignment>();
+    public DbSet<NotificationHistory> NotificationHistories => Set<NotificationHistory>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -70,6 +73,36 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany(tp => tp.Schedules)
                   .HasForeignKey(ts => ts.TechnicianProfileId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MaintenanceTicket>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Title).HasMaxLength(200).IsRequired();
+            entity.Property(t => t.Department).HasMaxLength(100);
+            entity.Property(t => t.RequiredSkill).HasMaxLength(100);
+        });
+
+        builder.Entity<Assignment>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+
+            entity.HasOne(a => a.Ticket)
+                  .WithMany(t => t.Assignments)
+                  .HasForeignKey(a => a.TicketId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.Technician)
+                  .WithMany(tp => tp.Assignments)
+                  .HasForeignKey(a => a.TechnicianProfileId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<NotificationHistory>(entity =>
+        {
+            entity.HasKey(n => n.Id);
+            entity.Property(n => n.Title).HasMaxLength(200);
+            entity.Property(n => n.EventType).HasMaxLength(50);
         });
     }
 }

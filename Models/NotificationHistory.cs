@@ -1,10 +1,10 @@
-﻿namespace SmartMaintenance.Dispatcher.Models;
+namespace Fixawyy.Models;
 
 public class NotificationHistory
 {
     public int Id { get; set; }
 
-    public int? RecipientUserId { get; set; }
+    public string? RecipientUserId { get; set; }
     public string TargetRole { get; set; } = "Manager"; // Manager, Technician, All
 
     public string Title { get; set; } = string.Empty;
