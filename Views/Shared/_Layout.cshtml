@@ -49,13 +49,52 @@
                                 <i class="bi bi-house-door me-1"></i>Home
                             </a>
                         </li>
+                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin") || User.IsInRole("Employee")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern" asp-controller="Maintenance" asp-action="Dashboard">
+                                    <i class="bi bi-clipboard2-pulse me-1 text-warning"></i>Maintenance
+                                </a>
+                            </li>
+                        }
+                        @if (SignInManager.IsSignedIn(User) && (User.IsInRole("Admin") || User.IsInRole("FacilityAdmin")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern" asp-controller="Department" asp-action="Index">
+                                    <i class="bi bi-diagram-3 me-1 text-info"></i>Departments
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern" asp-controller="Location" asp-action="Index">
+                                    <i class="bi bi-geo-alt me-1 text-info"></i>Locations
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link nav-link-modern" asp-controller="Technician" asp-action="Directory">
                                 <i class="bi bi-tools me-1 text-warning"></i>Find Technicians
                             </a>
                         </li>
+                        <!-- Teammate 2: Booking & Review Engine navigation -->
+                        @if (SignInManager.IsSignedIn(User) && User.IsInRole("Customer"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern" asp-controller="Booking" asp-action="MyBookings">
+                                    <i class="bi bi-calendar2-check me-1 text-info"></i>My Bookings
+                                </a>
+                            </li>
+                        }
+                        @if (SignInManager.IsSignedIn(User) && User.IsInRole("Technician"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-modern" asp-controller="Booking" asp-action="TechnicianBookings">
+                                    <i class="bi bi-clipboard2-check me-1 text-info"></i>Booking Requests
+                                </a>
+                            </li>
+                        }
                         @if (SignInManager.IsSignedIn(User))
                         {
+                            <li class="nav-item"><a class="nav-link nav-link-modern" asp-controller="Account" asp-action="Profile"><i class="bi bi-person-circle me-1"></i>Profile</a></li>
                             @if (User.IsInRole("FacilityAdmin"))
                             {
                                 <li class="nav-item">

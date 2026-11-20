@@ -1,6 +1,7 @@
-@model Fixawyy.Model_Views.TechnicianDirectoryViewModel
+@model Fixawyy.Model_Views.TechnicianCatalogViewModel
 @{
     ViewData["Title"] = "Technician Directory";
+    var f = Model.Filter;
 }
 
 <div class="py-4">
@@ -22,7 +23,7 @@
             <div class="col-md-7">
                 <div class="input-group">
                     <span class="input-group-text border-end-0"><i class="bi bi-search text-primary"></i></span>
-                    <input type="text" name="search" value="@Model.Search" class="form-control form-control-modern border-start-0" placeholder="Search by name, bio, or skill..." />
+                    <input type="text" name="search" value="@f.Search" class="form-control form-control-modern border-start-0" placeholder="Search by name, bio, or skill..." />
                 </div>
             </div>
             <div class="col-md-3">
@@ -30,7 +31,7 @@
                     <option value="">All Specialties</option>
                     @foreach (var s in Model.Specialties)
                     {
-                        <option value="@s.Id" selected="@(Model.SelectedSpecialtyId == s.Id)">@s.Name</option>
+                        <option value="@s.Id" selected="@(f.SpecialtyId == s.Id)">@s.Name</option>
                     }
                 </select>
             </div>
@@ -38,6 +39,31 @@
                 <button type="submit" class="btn btn-yellow-modern w-100">
                     <i class="bi bi-search me-1"></i>Search
                 </button>
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="form-label small fw-bold mb-1">Min rate (EGP/hr)</label>
+                <input type="number" min="0" step="10" name="MinPrice" value="@f.MinPrice" class="form-control form-control-modern" />
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="form-label small fw-bold mb-1">Max rate (EGP/hr)</label>
+                <input type="number" min="0" step="10" name="MaxPrice" value="@f.MaxPrice" class="form-control form-control-modern" />
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="form-label small fw-bold mb-1">Minimum rating</label>
+                <select name="MinRating" class="form-select form-control-modern">
+                    <option value="">Any</option>
+                    @foreach (var r in new[] { 3.0, 3.5, 4.0, 4.5 })
+                    {
+                        <option value="@r.ToString(System.Globalization.CultureInfo.InvariantCulture)" selected="@(f.MinRating == r)">@r.ToString("0.0")+ stars</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="form-check mt-md-4">
+                    <input class="form-check-input" type="checkbox" id="onlyAvailable" name="OnlyAvailable" value="true" checked="@f.OnlyAvailable" />
+                    <input type="hidden" name="OnlyAvailable" value="false" />
+                    <label class="form-check-label small fw-bold" for="onlyAvailable">Available technicians only</label>
+                </div>
             </div>
         </form>
     </div>
@@ -52,7 +78,7 @@
                         <i class="bi bi-tools fs-2"></i>
                     </div>
                     <h5 class="fw-bold">No technicians found</h5>
-                    <p class="text-muted small">Try searching with a different term or clearing the specialty filter.</p>
+                    <p class="text-muted small">Try searching with a different term or adjusting your filters.</p>
                     <a asp-action="Directory" class="btn btn-primary-modern btn-sm mt-2 mx-auto">
                         <i class="bi bi-arrow-clockwise me-1"></i>Clear All Filters
                     </a>
@@ -140,6 +166,15 @@
                                 <small class="text-muted d-block fw-bold" style="font-size: 0.68rem; letter-spacing: 0.5px;">EXPERIENCE</small>
                                 <span class="fw-bold fs-6">@tech.YearsOfExperience <span class="small fw-normal text-muted">Years</span></span>
                             </div>
+                        </div>
+
+                        <!-- Teammate 2: booking & reviews shortcuts -->
+                        <div class="d-flex gap-2 mt-3">
+                            @if (tech.IsAvailable)
+                            {
+                                <a asp-controller="Booking" asp-action="Create" asp-route-technicianId="@tech.Id" class="btn btn-yellow-modern btn-sm flex-fill"><i class="bi bi-calendar-plus me-1"></i>Book Now</a>
+                            }
+                            <a asp-controller="Review" asp-action="Technician" asp-route-id="@tech.Id" class="btn btn-outline-secondary btn-sm flex-fill"><i class="bi bi-star me-1"></i>Reviews</a>
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,12 @@
+@model double
+@{
+    var rounded = Math.Round(Model * 2, MidpointRounding.AwayFromZero) / 2.0;
+}
+<span class="text-warning" aria-label="@Model.ToString("F1") out of 5">
+    @for (var i = 1; i <= 5; i++)
+    {
+        if (rounded >= i) { <i class="bi bi-star-fill"></i> }
+        else if (rounded >= i - 0.5) { <i class="bi bi-star-half"></i> }
+        else { <i class="bi bi-star"></i> }
+    }
+</span>

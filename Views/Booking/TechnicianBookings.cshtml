@@ -1,0 +1,59 @@
+@model List<BookingListItemViewModel>
+@{
+    ViewData["Title"] = "Booking Requests";
+}
+<link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+<partial name="_BookingDevBanner" />
+
+<div class="py-3">
+    <h2 class="fw-bold mb-4"><i class="bi bi-clipboard2-check text-primary me-2"></i>Customer Bookings</h2>
+
+    @if (Model.Count == 0)
+    {
+        <div class="card card-modern p-5 text-center"><h5 class="fw-bold mb-1">No bookings yet</h5><p class="text-muted small mb-0">New customer bookings will appear here.</p></div>
+    }
+
+    <div class="row g-3">
+        @foreach (var b in Model)
+        {
+            <div class="col-12">
+                <div class="card card-modern p-3 p-md-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-3">
+                            <div class="fw-bold">@b.CustomerName</div>
+                            @if (!string.IsNullOrEmpty(b.CustomerPhone)) { <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@b.CustomerPhone</div> }
+                            <div class="small text-muted">Booking #@b.Id</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fw-semibold"><i class="bi bi-calendar-event me-1 text-primary"></i>@b.BookingDate.ToString("ddd, dd MMM yyyy")</div>
+                            <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i>@b.TimeRangeText</div>
+                            <div class="small">@string.Join(", ", b.Items.Select(i => i.ServiceName))</div>
+                            @if (!string.IsNullOrEmpty(b.Notes)) { <div class="small text-muted fst-italic mt-1">“@b.Notes”</div> }
+                        </div>
+                        <div class="col-md-2">
+                            <div class="fw-bold text-primary">@b.TotalPrice.ToString("N0") EGP</div>
+                            <div class="mt-1"><partial name="_BookingStatusBadge" model="b.Status" /></div>
+                        </div>
+                        <div class="col-md-3 d-flex flex-wrap gap-2 justify-content-md-end">
+                            @foreach (var next in b.AllowedNextStatuses)
+                            {
+                                <form method="post" asp-action="UpdateStatus" data-confirm="@(next == BookingStatus.Cancelled ? "Cancel this booking?" : "Mark this booking as " + next + "?")">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="BookingId" value="@b.Id" />
+                                    <input type="hidden" name="NewStatus" value="@next" />
+                                    <button type="submit" class="btn btn-sm @(next == BookingStatus.Cancelled ? "btn-outline-danger" : next == BookingStatus.Completed ? "btn-success" : "btn-primary-modern")">
+                                        @(next == BookingStatus.Confirmed ? "Confirm" : next == BookingStatus.Completed ? "Mark completed" : "Cancel")
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/booking.js" asp-append-version="true"></script>
+}

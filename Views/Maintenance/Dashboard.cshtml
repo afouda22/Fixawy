@@ -1,0 +1,47 @@
+@model B2BDashboardViewModel
+@{
+	ViewData["Title"] = "Maintenance Dashboard";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+	<div>
+		<p class="text-primary fw-semibold mb-1">B2B Maintenance</p>
+		<h1 class="h3 mb-1">Maintenance Dashboard</h1>
+		<p class="text-muted mb-0">Monitor request volume, status, and priority from one place.</p>
+	</div>
+	<div class="d-flex gap-2">
+		<a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>New Request</a>
+		<a asp-action="Index" class="btn btn-outline-primary">View Requests</a>
+	</div>
+</div>
+
+<div class="row g-3 mb-4">
+	<div class="col-6 col-xl-3"><div class="card h-100 shadow-sm border-0"><div class="card-body"><span class="text-muted small">Total requests</span><div class="fs-2 fw-bold">@Model.TotalRequests</div></div></div></div>
+	<div class="col-6 col-xl-3"><div class="card h-100 shadow-sm border-0"><div class="card-body"><span class="text-muted small">Pending</span><div class="fs-2 fw-bold text-warning">@Model.PendingRequests</div></div></div></div>
+	<div class="col-6 col-xl-3"><div class="card h-100 shadow-sm border-0"><div class="card-body"><span class="text-muted small">In progress</span><div class="fs-2 fw-bold text-primary">@Model.InProgressRequests</div></div></div></div>
+	<div class="col-6 col-xl-3"><div class="card h-100 shadow-sm border-0"><div class="card-body"><span class="text-muted small">Resolved / closed</span><div class="fs-2 fw-bold text-success">@Model.ResolvedRequests</div></div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+	<div class="col-md-6"><div class="card border-warning h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-muted small">High priority</div><div class="fs-3 fw-bold text-warning">@Model.HighPriorityRequests</div></div><i class="bi bi-exclamation-triangle fs-2 text-warning"></i></div></div></div>
+	<div class="col-md-6"><div class="card border-danger h-100"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-muted small">Critical priority</div><div class="fs-3 fw-bold text-danger">@Model.CriticalPriorityRequests</div></div><i class="bi bi-shield-exclamation fs-2 text-danger"></i></div></div></div>
+</div>
+
+<div class="card border-0 shadow-sm">
+	<div class="card-header bg-transparent d-flex justify-content-between align-items-center"><h2 class="h5 mb-0">Recent requests</h2><a asp-action="Index" class="small">See all</a></div>
+	<div class="card-body p-0">
+		@if (Model.RecentRequests.Count == 0)
+		{
+			<div class="p-4 text-center text-muted">No maintenance requests yet.</div>
+		}
+		else
+		{
+			<div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Title</th><th>Status</th><th>Priority</th><th>Created</th><th></th></tr></thead><tbody>
+			@foreach (var request in Model.RecentRequests)
+			{
+				<tr><td><strong>@request.Title</strong><div class="small text-muted">@request.DepartmentName · @request.LocationName</div></td><td><span class="badge text-bg-secondary">@request.Status</span></td><td><span class="badge @(request.Priority == "Critical" ? "text-bg-danger" : request.Priority == "High" ? "text-bg-warning" : "text-bg-primary")">@request.Priority (@request.PriorityScore)</span></td><td>@request.CreatedAt.ToLocalTime().ToString("g")</td><td><a asp-action="Details" asp-route-id="@request.Id" class="btn btn-sm btn-outline-secondary">Details</a></td></tr>
+			}
+			</tbody></table></div>
+		}
+	</div>
+</div>

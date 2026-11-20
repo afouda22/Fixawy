@@ -51,12 +51,17 @@ public class TechnicianService : ITechnicianService
 
     public async Task<bool> UpdateProfileAsync(string userId, TechnicianProfileViewModel model)
     {
+        if (model.HourlyRate < 0 || model.HourlyRate > 10000 || model.YearsOfExperience < 0 || model.YearsOfExperience > 50)
+            return false;
+
         var tp = await _context.TechnicianProfiles
             .Include(t => t.TechnicianSpecialties)
             .FirstOrDefaultAsync(t => t.UserId == userId);
 
         if (tp == null)
         {
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists) return false;
             tp = new TechnicianProfile { UserId = userId };
             await _context.TechnicianProfiles.AddAsync(tp);
         }
@@ -122,9 +127,20 @@ public class TechnicianService : ITechnicianService
 
         if (tp == null) return false;
 
+        var items = model.Schedules ?? new List<ScheduleItemViewModel>();
+        if (items.GroupBy(x => x.DayOfWeek).Any(g => g.Count() > 1)) return false;
+
+        foreach (var item in items)
+        {
+            if (!TimeSpan.TryParse(item.StartTime, out var start) || !TimeSpan.TryParse(item.EndTime, out var end))
+                return false;
+            if (item.IsWorkingDay && end <= start) return false;
+            if (item.DayOfWeek < DayOfWeek.Sunday || item.DayOfWeek > DayOfWeek.Saturday) return false;
+        }
+
         _context.TechnicianSchedules.RemoveRange(tp.Schedules);
 
-        foreach (var item in model.Schedules)
+        foreach (var item in items)
         {
             TimeSpan.TryParse(item.StartTime, out var st);
             TimeSpan.TryParse(item.EndTime, out var et);

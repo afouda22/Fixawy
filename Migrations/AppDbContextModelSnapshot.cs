@@ -168,6 +168,150 @@ namespace Fixawyy.Migrations
                     b.ToTable("Assignments");
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.Booking", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("BookingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("TechnicianId", "BookingDate");
+
+                    b.HasIndex("TechnicianId", "BookingDate", "StartTime")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 3");
+
+                    b.ToTable("Bookings");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.BookingItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("SpecialtyId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
+
+                    b.HasIndex("SpecialtyId");
+
+                    b.ToTable("BookingItems");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.Department", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.Location", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Building")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Floor")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Locations");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.MaintenanceTicket", b =>
                 {
                     b.Property<int>("Id")
@@ -184,11 +328,29 @@ namespace Fixawyy.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("HazardLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ImpactScope")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LocationCriticality")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LocationId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PriorityScore")
                         .HasColumnType("int");
 
                     b.Property<string>("RequiredSkill")
@@ -202,12 +364,24 @@ namespace Fixawyy.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<string>("SubmittedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("SubmittedByUserId");
 
                     b.ToTable("MaintenanceTickets");
                 });
@@ -255,6 +429,46 @@ namespace Fixawyy.Migrations
                     b.ToTable("NotificationHistories");
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique();
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("TechnicianId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.Specialty", b =>
                 {
                     b.Property<int>("Id")
@@ -277,6 +491,9 @@ namespace Fixawyy.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Specialties");
                 });
@@ -345,7 +562,8 @@ namespace Fixawyy.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TechnicianProfileId");
+                    b.HasIndex("TechnicianProfileId", "DayOfWeek")
+                        .IsUnique();
 
                     b.ToTable("TechnicianSchedules");
                 });
@@ -363,6 +581,45 @@ namespace Fixawyy.Migrations
                     b.HasIndex("SpecialtyId");
 
                     b.ToTable("TechnicianSpecialties");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.TicketAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("MaintenanceTicketId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaintenanceTicketId");
+
+                    b.ToTable("TicketAttachments");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -517,6 +774,92 @@ namespace Fixawyy.Migrations
                     b.Navigation("Ticket");
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.Booking", b =>
+                {
+                    b.HasOne("Fixawyy.Models.ApplicationUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Fixawyy.Models.TechnicianProfile", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Technician");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.BookingItem", b =>
+                {
+                    b.HasOne("Fixawyy.Models.Booking", "Booking")
+                        .WithMany("Items")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Fixawyy.Models.Specialty", "Specialty")
+                        .WithMany()
+                        .HasForeignKey("SpecialtyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Specialty");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.MaintenanceTicket", b =>
+                {
+                    b.HasOne("Fixawyy.Models.Department", "DepartmentEntity")
+                        .WithMany("MaintenanceTickets")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Fixawyy.Models.Location", "Location")
+                        .WithMany("MaintenanceTickets")
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Fixawyy.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("DepartmentEntity");
+
+                    b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.Review", b =>
+                {
+                    b.HasOne("Fixawyy.Models.Booking", "Booking")
+                        .WithOne("Review")
+                        .HasForeignKey("Fixawyy.Models.Review", "BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Fixawyy.Models.ApplicationUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Fixawyy.Models.TechnicianProfile", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Technician");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.TechnicianProfile", b =>
                 {
                     b.HasOne("Fixawyy.Models.ApplicationUser", "User")
@@ -556,6 +899,17 @@ namespace Fixawyy.Migrations
                     b.Navigation("Specialty");
 
                     b.Navigation("TechnicianProfile");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.TicketAttachment", b =>
+                {
+                    b.HasOne("Fixawyy.Models.MaintenanceTicket", "MaintenanceTicket")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MaintenanceTicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MaintenanceTicket");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -614,9 +968,28 @@ namespace Fixawyy.Migrations
                     b.Navigation("TechnicianProfile");
                 });
 
+            modelBuilder.Entity("Fixawyy.Models.Booking", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Review");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.Department", b =>
+                {
+                    b.Navigation("MaintenanceTickets");
+                });
+
+            modelBuilder.Entity("Fixawyy.Models.Location", b =>
+                {
+                    b.Navigation("MaintenanceTickets");
+                });
+
             modelBuilder.Entity("Fixawyy.Models.MaintenanceTicket", b =>
                 {
                     b.Navigation("Assignments");
+
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("Fixawyy.Models.Specialty", b =>

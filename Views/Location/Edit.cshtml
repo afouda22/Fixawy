@@ -1,0 +1,4 @@
+@model LocationFormViewModel
+@{ ViewData["Title"] = "Edit Location"; }
+<div class="row justify-content-center"><div class="col-lg-7"><h1 class="h3 mb-4">Edit Location</h1><form asp-action="Edit" method="post" class="card border-0 shadow-sm"><input asp-for="Id" type="hidden" /><div class="card-body"><partial name="_Form" model="Model" /></div><div class="card-footer bg-transparent d-flex justify-content-end gap-2"><a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a><button class="btn btn-primary" type="submit">Save changes</button></div></form></div></div>
+@section Scripts {<partial name="_ValidationScriptsPartial" />}

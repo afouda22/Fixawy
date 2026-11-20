@@ -86,3 +86,59 @@ public class VerifyOtpViewModel
     [Display(Name = "Verification Code")]
     public string OtpCode { get; set; } = string.Empty;
 }
+
+public class ForgotPasswordViewModel
+{
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordViewModel
+{
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required, DataType(DataType.Password)]
+    public string Token { get; set; } = string.Empty;
+
+    [Required, StringLength(100, MinimumLength = 6), DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+
+    [Compare(nameof(Password)), DataType(DataType.Password)]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+public class ChangePasswordViewModel
+{
+    [Required, DataType(DataType.Password)]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required, StringLength(100, MinimumLength = 6), DataType(DataType.Password)]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Compare(nameof(NewPassword)), DataType(DataType.Password)]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+public class UserProfileViewModel
+{
+    [Required, StringLength(150, MinimumLength = 3)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Phone]
+    public string? PhoneNumber { get; set; }
+
+    [Phone]
+    public string? SecondaryPhoneNumber { get; set; }
+
+    [Required, StringLength(100)]
+    public string Country { get; set; } = "Egypt";
+
+    [RegularExpression(@"^[0-9]{14}$")]
+    public string? NationalId { get; set; }
+
+    [DataType(DataType.Date)]
+    public DateTime? DateOfBirth { get; set; }
+
+    public string? Email { get; set; }
+}

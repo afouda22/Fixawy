@@ -1,0 +1,105 @@
+@model CreateBookingViewModel
+@{
+    ViewData["Title"] = "Book " + Model.TechnicianName;
+}
+<link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+<partial name="_BookingDevBanner" />
+
+<div class="py-3">
+    <a asp-action="Technicians" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Back to technicians</a>
+    <h2 class="fw-bold mt-2 mb-4">Book an appointment</h2>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card card-modern p-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                    {
+                        <img src="@Model.ProfilePictureUrl" alt="@Model.TechnicianName" class="rounded-circle border object-fit-cover" style="width: 60px; height: 60px; border-color: #f5a623 !important; border-width: 2px !important;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-4 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">@(Model.TechnicianName.Length > 0 ? Model.TechnicianName[0] : 'T')</div>
+                    }
+                    <div>
+                        <h5 class="fw-bold mb-0">@Model.TechnicianName</h5>
+                        @if (Model.ReviewCount > 0)
+                        {
+                            <a asp-controller="Review" asp-action="Technician" asp-route-id="@Model.TechnicianId" class="text-decoration-none small">
+                                <partial name="_StarRating" model="Model.Rating" /> @Model.Rating.ToString("F1") (@Model.ReviewCount)
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="small text-muted">New pro - no reviews yet</span>
+                        }
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between small border-top pt-3">
+                    <span class="text-muted">Hourly rate</span>
+                    <span class="fw-bold">@Model.HourlyRate.ToString("N0") EGP</span>
+                </div>
+                <div class="d-flex justify-content-between small mt-2">
+                    <span class="text-muted">Duration</span>
+                    <span class="fw-bold" id="bookingHours">0 hours</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2 pt-2 border-top">
+                    <span class="fw-bold">Estimated total</span>
+                    <span class="fw-bold text-primary fs-5" id="bookingTotal">0 EGP</span>
+                </div>
+                <p class="text-muted mt-3 mb-0" style="font-size: .75rem;">Each selected service reserves one hour of the technician's time. The technician confirms your request after you submit it.</p>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <form id="bookingForm" method="post" asp-action="Create" class="card card-modern p-4"
+                  data-slots-url="@Url.Action("Slots", "Booking")" data-technician-id="@Model.TechnicianId"
+                  data-hourly-rate="@Model.HourlyRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-max-days="@Model.MaxAdvanceDays">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TechnicianId" />
+                <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-3 small"></div>
+
+                <h6 class="fw-bold mb-2">1. Select services</h6>
+                <div class="row g-2 mb-1">
+                    @foreach (var s in Model.Services)
+                    {
+                        <div class="col-md-6 service-tile">
+                            <input type="checkbox" id="svc@(s.SpecialtyId)" name="SelectedSpecialtyIds" value="@s.SpecialtyId" checked="@Model.SelectedSpecialtyIds.Contains(s.SpecialtyId)" />
+                            <label for="svc@(s.SpecialtyId)">
+                                <span class="fw-bold d-block">@s.Name</span>
+                                <span class="text-muted small">@(string.IsNullOrEmpty(s.Description) ? "1 hour of service" : s.Description)</span>
+                            </label>
+                        </div>
+                    }
+                    @if (Model.Services.Count == 0)
+                    {
+                        <div class="col-12 text-muted small">This technician has not listed any services yet.</div>
+                    }
+                </div>
+                <span asp-validation-for="SelectedSpecialtyIds" class="text-danger small"></span>
+
+                <h6 class="fw-bold mt-4 mb-2">2. Choose a date</h6>
+                <input type="date" asp-for="BookingDate" id="BookingDate" class="form-control form-control-modern" style="max-width: 260px;" value="@(Model.BookingDate?.ToString("yyyy-MM-dd"))" />
+                <span asp-validation-for="BookingDate" class="text-danger small"></span>
+
+                <h6 class="fw-bold mt-4 mb-2">3. Pick a time slot</h6>
+                <input type="hidden" id="StartTimeValue" name="StartTime" value="@Model.StartTime" />
+                <div id="slotContainer"></div>
+                <div id="slotMessage" class="small mt-2 text-muted" aria-live="polite"></div>
+                <span asp-validation-for="StartTime" class="text-danger small"></span>
+
+                <h6 class="fw-bold mt-4 mb-2">4. Notes (optional)</h6>
+                <textarea asp-for="Notes" rows="3" maxlength="500" class="form-control form-control-modern" placeholder="Describe the problem or give access instructions..."></textarea>
+                <span asp-validation-for="Notes" class="text-danger small"></span>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" id="bookingSubmit" class="btn btn-yellow-modern px-4" disabled><i class="bi bi-calendar-check me-1"></i>Confirm booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/booking.js" asp-append-version="true"></script>
+}

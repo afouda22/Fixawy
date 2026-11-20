@@ -1,0 +1,12 @@
+@model Fixawyy.Model_Views.UserProfileViewModel
+@{ ViewData["Title"] = "My Profile"; }
+<div class="row justify-content-center py-4"><div class="col-lg-8"><div class="card card-modern p-4 shadow-sm">
+<h3>My Profile</h3><form asp-action="Profile" method="post">@Html.AntiForgeryToken()<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" readonly />
+<label asp-for="FullName" class="form-label mt-3"></label><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName" class="text-danger"></span>
+<label asp-for="PhoneNumber" class="form-label mt-3"></label><input asp-for="PhoneNumber" class="form-control" /><span asp-validation-for="PhoneNumber" class="text-danger"></span>
+<label asp-for="SecondaryPhoneNumber" class="form-label mt-3"></label><input asp-for="SecondaryPhoneNumber" class="form-control" />
+<label asp-for="Country" class="form-label mt-3"></label><input asp-for="Country" class="form-control" />
+<label asp-for="NationalId" class="form-label mt-3"></label><input asp-for="NationalId" class="form-control" /><span asp-validation-for="NationalId" class="text-danger"></span>
+<label asp-for="DateOfBirth" class="form-label mt-3"></label><input asp-for="DateOfBirth" class="form-control" />
+<div class="mt-4 d-flex gap-2"><button class="btn btn-primary" type="submit">Save Profile</button><a asp-action="ChangePassword" class="btn btn-outline-secondary">Change Password</a></div></form></div></div></div>

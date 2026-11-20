@@ -1,7 +1,10 @@
 using Fixawyy.Model_Views;
 using Fixawyy.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace Fixawyy.Controllers;
 
@@ -25,6 +28,118 @@ public class AccountController : Controller
         _context = context;
         _webHostEnvironment = webHostEnvironment;
         _emailService = emailService;
+    }
+
+    [HttpGet]
+    public IActionResult ForgotPassword() => View(new ForgotPasswordViewModel());
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user != null && user.EmailConfirmed && user.IsActive)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var callbackUrl = Url.Action(nameof(ResetPassword), "Account", new { email = user.Email, token }, Request.Scheme);
+            await _emailService.SendEmailAsync(user.Email!, "Fixawyy - Reset your password",
+                $"<p>Hello {HtmlEncoder.Default.Encode(user.FullName)},</p><p><a href=\"{HtmlEncoder.Default.Encode(callbackUrl ?? string.Empty)}\">Reset your password</a></p>");
+        }
+
+        TempData["SuccessMessage"] = "If an active account exists for that email, password reset instructions have been sent.";
+        return RedirectToAction(nameof(Login));
+    }
+
+    [HttpGet]
+    public IActionResult ResetPassword(string? email, string? token)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token)) return BadRequest();
+        return View(new ResetPasswordViewModel { Email = email, Token = token });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null) return RedirectToAction(nameof(Login));
+
+        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+        if (result.Succeeded)
+        {
+            TempData["SuccessMessage"] = "Your password has been reset. You can now sign in.";
+            return RedirectToAction(nameof(Login));
+        }
+        foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
+        return View(model);
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> Profile()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+        return View(new UserProfileViewModel
+        {
+            FullName = user.FullName,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            SecondaryPhoneNumber = user.SecondaryPhoneNumber,
+            Country = user.Country,
+            NationalId = user.NationalId,
+            DateOfBirth = user.DateOfBirth
+        });
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(UserProfileViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+        user.FullName = model.FullName.Trim();
+        user.PhoneNumber = model.PhoneNumber;
+        user.SecondaryPhoneNumber = model.SecondaryPhoneNumber;
+        user.Country = model.Country.Trim();
+        user.NationalId = model.NationalId;
+        user.DateOfBirth = model.DateOfBirth;
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
+            return View(model);
+        }
+        TempData["SuccessMessage"] = "Your profile has been updated.";
+        return RedirectToAction(nameof(Profile));
+    }
+
+    [Authorize]
+    [HttpGet]
+    public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+        var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
+            return View(model);
+        }
+        await _signInManager.RefreshSignInAsync(user);
+        TempData["SuccessMessage"] = "Your password has been changed.";
+        return RedirectToAction(nameof(Profile));
     }
 
     [HttpGet]
@@ -61,7 +176,7 @@ public class AccountController : Controller
             return RedirectToAction(nameof(VerifyOtp), new { email = user.Email });
         }
 
-        var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: false);
+        var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: true);
         if (result.Succeeded)
         {
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -159,39 +274,10 @@ public class AccountController : Controller
         }
 
         // Role assignment
-        string targetRole = AppRoles.Customer;
-        if (model.Role == AppRoles.Technician) targetRole = AppRoles.Technician;
-        else if (model.Role == AppRoles.Employee) targetRole = AppRoles.Employee;
+        // Public registration must never grant operational roles.
+        const string targetRole = AppRoles.Customer;
 
         await _userManager.AddToRoleAsync(user, targetRole);
-
-        if (targetRole == AppRoles.Technician)
-        {
-            var profile = new TechnicianProfile
-            {
-                UserId = user.Id,
-                Bio = "Skilled technician ready to accept jobs.",
-                HourlyRate = 150m,
-                YearsOfExperience = 1,
-                IsAvailable = true,
-                Rating = 0.0,
-                ReviewCount = 0
-            };
-
-            for (int day = 0; day <= 4; day++)
-            {
-                profile.Schedules.Add(new TechnicianSchedule
-                {
-                    DayOfWeek = (DayOfWeek)day,
-                    StartTime = new TimeSpan(9, 0, 0),
-                    EndTime = new TimeSpan(17, 0, 0),
-                    IsWorkingDay = true
-                });
-            }
-
-            await _context.TechnicianProfiles.AddAsync(profile);
-            await _context.SaveChangesAsync();
-        }
 
         // Send OTP verification email from info.eu.yo@gmail.com
         var emailSubject = "Fixawyy - Your Email Verification Code";

@@ -31,6 +31,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredLength = 6;
     options.User.RequireUniqueEmail = true;
+    options.Lockout.AllowedForNewUsers = true;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
@@ -48,11 +51,23 @@ builder.Services.ConfigureApplicationCookie(options =>
 // 5. Register Application Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITechnicianService, TechnicianService>();
+builder.Services.AddScoped<ITechnicianCatalogService, TechnicianCatalogService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Register B2B Smart Prioritization Service
+builder.Services.AddScoped<PriorityCalculator>();
+builder.Services.AddScoped<IMaintenanceRequestService, MaintenanceRequestService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.Configure<AttachmentOptions>(
+    builder.Configuration.GetSection(AttachmentOptions.SectionName));
+builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 // Register Teammate 4 Services (Dispatcher Engine & Executive Analytics)
 builder.Services.AddScoped<ITechnicianAssignmentService, TechnicianAssignmentService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
+// Register Teammate 2 Services (B2C Booking & Review Engine)
+builder.Services.AddBookingEngine(builder.Configuration);
 
 var app = builder.Build();
 
@@ -68,6 +83,7 @@ using (var scope = app.Services.CreateScope())
             await context.Database.MigrateAsync();
         }
         await DbInitializer.SeedAsync(app.Services);
+        await DevBookingSeeder.SeedAsync(app.Services); // Teammate 2: dev-only mock customer (no-op unless DevTesting is enabled)
     }
     catch (Exception ex)
     {

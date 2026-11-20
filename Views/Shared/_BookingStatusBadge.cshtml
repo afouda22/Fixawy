@@ -1,0 +1,11 @@
+@model Fixawyy.Models.BookingStatus
+@{
+    var (css, icon) = Model switch
+    {
+        BookingStatus.Pending => ("pending", "bi-hourglass-split"),
+        BookingStatus.Confirmed => ("confirmed", "bi-check2-circle"),
+        BookingStatus.Completed => ("completed", "bi-patch-check-fill"),
+        _ => ("cancelled", "bi-x-circle-fill")
+    };
+}
+<span class="booking-status booking-status-@css"><i class="bi @icon"></i>@Model</span>

@@ -1,0 +1,29 @@
+@model BookingListItemViewModel
+@{
+    ViewData["Title"] = "Booking received";
+}
+<link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+<partial name="_BookingDevBanner" />
+
+<div class="py-4" style="max-width: 640px; margin: 0 auto;">
+    <div class="card card-modern p-4 text-center">
+        <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;"><i class="bi bi-check-lg fs-2"></i></div>
+        <h3 class="fw-bold">Booking request sent</h3>
+        <p class="text-muted">@Model.TechnicianName will review your request. You can follow its status in My Bookings.</p>
+
+        <div class="text-start border rounded-3 p-3 mt-2">
+            <div class="d-flex justify-content-between mb-1"><span class="text-muted">Booking #</span><strong>@Model.Id</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span class="text-muted">Technician</span><strong>@Model.TechnicianName</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span class="text-muted">Date</span><strong>@Model.BookingDate.ToString("dddd, dd MMM yyyy")</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span class="text-muted">Time</span><strong>@Model.TimeRangeText</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span class="text-muted">Services</span><strong>@string.Join(", ", Model.Items.Select(i => i.ServiceName))</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span class="text-muted">Status</span><partial name="_BookingStatusBadge" model="Model.Status" /></div>
+            <div class="d-flex justify-content-between pt-2 mt-2 border-top"><span class="fw-bold">Total</span><strong class="text-primary">@Model.TotalPrice.ToString("N0") EGP</strong></div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-center mt-4">
+            <a asp-action="MyBookings" class="btn btn-yellow-modern">My Bookings</a>
+            <a asp-action="Technicians" class="btn btn-outline-secondary">Book another</a>
+        </div>
+    </div>
+</div>

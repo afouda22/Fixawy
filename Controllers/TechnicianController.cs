@@ -10,17 +10,24 @@ namespace Fixawyy.Controllers;
 public class TechnicianController : Controller
 {
     private readonly ITechnicianService _technicianService;
+    private readonly ITechnicianCatalogService _catalogService;
 
-    public TechnicianController(ITechnicianService technicianService)
+    public TechnicianController(ITechnicianService technicianService, ITechnicianCatalogService catalogService)
     {
         _technicianService = technicianService;
+        _catalogService = catalogService;
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> Directory(int? specialtyId, string? search)
+    public async Task<IActionResult> Directory([FromQuery] TechnicianCatalogFilter filter)
     {
-        var model = await _technicianService.GetDirectoryAsync(specialtyId, search);
+        // The directory has always listed every technician (available or busy) by default;
+        // "available only" is applied only when the customer ticks it.
+        if (!Request.Query.ContainsKey(nameof(TechnicianCatalogFilter.OnlyAvailable)))
+            filter.OnlyAvailable = false;
+
+        var model = await _catalogService.SearchAsync(filter);
         return View(model);
     }
 
@@ -45,6 +52,7 @@ public class TechnicianController : Controller
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
+        if (!ModelState.IsValid) return View(model);
         var success = await _technicianService.UpdateProfileAsync(userId, model);
         if (success)
         {
@@ -77,6 +85,7 @@ public class TechnicianController : Controller
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
+        if (!ModelState.IsValid) return View(model);
         var success = await _technicianService.UpdateScheduleAsync(userId, model);
         if (success)
         {

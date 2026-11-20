@@ -1,0 +1,11 @@
+@if (ViewData["DevActor"] is string devActor && !string.IsNullOrEmpty(devActor))
+{
+    <div class="alert alert-warning dev-banner border-0 shadow-sm d-flex flex-wrap align-items-center gap-2 mb-3">
+        <i class="bi bi-bug-fill"></i>
+        <span><strong>Dev testing mode:</strong> acting as @devActor (no login). Configure in <code>DevTesting</code> in appsettings.Development.json.</span>
+        <span class="ms-auto d-flex gap-2">
+            <a asp-controller="Booking" asp-action="MyBookings" class="btn btn-sm btn-outline-dark">My Bookings</a>
+            <a asp-controller="Booking" asp-action="TechnicianBookings" class="btn btn-sm btn-outline-dark">Technician Bookings</a>
+        </span>
+    </div>
+}

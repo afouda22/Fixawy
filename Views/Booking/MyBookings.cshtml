@@ -1,0 +1,81 @@
+@model List<BookingListItemViewModel>
+@{
+    ViewData["Title"] = "My Bookings";
+}
+<link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+<partial name="_BookingDevBanner" />
+
+<div class="py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <h2 class="fw-bold mb-0"><i class="bi bi-calendar2-check text-primary me-2"></i>My Bookings</h2>
+        <a asp-action="Technicians" class="btn btn-yellow-modern btn-sm"><i class="bi bi-plus-lg me-1"></i>New booking</a>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="card card-modern p-5 text-center">
+            <h5 class="fw-bold">You have no bookings yet</h5>
+            <p class="text-muted small">Find a technician and book your first appointment.</p>
+            <a asp-action="Technicians" class="btn btn-primary-modern btn-sm mx-auto">Find technicians</a>
+        </div>
+    }
+
+    <div class="row g-3">
+        @foreach (var b in Model)
+        {
+            <div class="col-12">
+                <div class="card card-modern p-3 p-md-4">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4 d-flex align-items-center gap-3">
+                            @if (!string.IsNullOrEmpty(b.TechnicianPictureUrl))
+                            {
+                                <img src="@b.TechnicianPictureUrl" alt="@b.TechnicianName" class="rounded-circle object-fit-cover" style="width: 48px; height: 48px;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">@(b.TechnicianName.Length > 0 ? b.TechnicianName[0] : 'T')</div>
+                            }
+                            <div>
+                                <div class="fw-bold">@b.TechnicianName</div>
+                                <a asp-controller="Review" asp-action="Technician" asp-route-id="@b.TechnicianId" class="small text-decoration-none">View reviews</a>
+                                @if (!string.IsNullOrEmpty(b.TechnicianPhone)) { <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@b.TechnicianPhone</div> }
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fw-semibold"><i class="bi bi-calendar-event me-1 text-primary"></i>@b.BookingDate.ToString("ddd, dd MMM yyyy")</div>
+                            <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i>@b.TimeRangeText</div>
+                            <div class="small">@string.Join(", ", b.Items.Select(i => i.ServiceName))</div>
+                            @if (!string.IsNullOrEmpty(b.Notes)) { <div class="small text-muted fst-italic mt-1">“@b.Notes”</div> }
+                        </div>
+                        <div class="col-md-2">
+                            <div class="small text-muted">Total</div>
+                            <div class="fw-bold text-primary">@b.TotalPrice.ToString("N0") EGP</div>
+                            <div class="mt-1"><partial name="_BookingStatusBadge" model="b.Status" /></div>
+                        </div>
+                        <div class="col-md-2 d-flex flex-column gap-2 align-items-md-end">
+                            @if (b.CanCancel)
+                            {
+                                <form method="post" asp-action="Cancel" asp-route-id="@b.Id" data-confirm="Cancel this booking?">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Cancel</button>
+                                </form>
+                            }
+                            @if (b.CanReview)
+                            {
+                                <a asp-controller="Review" asp-action="Create" asp-route-bookingId="@b.Id" class="btn btn-yellow-modern btn-sm"><i class="bi bi-star me-1"></i>Leave review</a>
+                            }
+                            else if (b.HasReview)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Reviewed</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/booking.js" asp-append-version="true"></script>
+}

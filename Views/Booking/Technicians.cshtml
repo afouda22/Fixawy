@@ -1,0 +1,151 @@
+@model TechnicianCatalogViewModel
+@{
+    ViewData["Title"] = "Book a Technician";
+    var f = Model.Filter;
+}
+<link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+
+<div class="py-3">
+    <div class="text-center mb-4">
+        <span class="brand-pill"><i class="bi bi-calendar-check-fill text-warning"></i><span>Fixawyy Booking • Choose your pro</span></span>
+        <h2 class="fw-bold display-6 mt-2 mb-2">Book a Technician</h2>
+        <p class="text-muted">Filter by skill, price and rating, then pick a time that suits you.</p>
+    </div>
+
+    <div class="card card-modern p-3 mb-4">
+        <form method="get" asp-action="Technicians" class="row g-3 align-items-end">
+            <div class="col-lg-4">
+                <label class="form-label small fw-bold">Search</label>
+                <input type="text" name="Search" value="@f.Search" class="form-control form-control-modern" placeholder="Name, skill or keyword..." />
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small fw-bold">Specialty</label>
+                <select name="SpecialtyId" class="form-select form-control-modern">
+                    <option value="">All specialties</option>
+                    @foreach (var s in Model.Specialties)
+                    {
+                        <option value="@s.Id" selected="@(f.SpecialtyId == s.Id)">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-3 col-6">
+                <label class="form-label small fw-bold">Min rate (EGP/hr)</label>
+                <input type="number" min="0" step="10" name="MinPrice" value="@f.MinPrice" class="form-control form-control-modern" />
+            </div>
+            <div class="col-lg-2 col-md-3 col-6">
+                <label class="form-label small fw-bold">Max rate (EGP/hr)</label>
+                <input type="number" min="0" step="10" name="MaxPrice" value="@f.MaxPrice" class="form-control form-control-modern" />
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <label class="form-label small fw-bold">Minimum rating</label>
+                <select name="MinRating" class="form-select form-control-modern">
+                    <option value="">Any</option>
+                    @foreach (var r in new[] { 3.0, 3.5, 4.0, 4.5 })
+                    {
+                        <option value="@r.ToString(System.Globalization.CultureInfo.InvariantCulture)" selected="@(f.MinRating == r)">@r.ToString("0.0")+ stars</option>
+                    }
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-4 col-6">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="onlyAvailable" name="OnlyAvailable" value="true" checked="@f.OnlyAvailable" />
+                    <input type="hidden" name="OnlyAvailable" value="false" />
+                    <label class="form-check-label small fw-bold" for="onlyAvailable">Available technicians only</label>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-yellow-modern flex-fill"><i class="bi bi-funnel-fill me-1"></i>Filter</button>
+                <a asp-action="Technicians" class="btn btn-outline-secondary flex-fill">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        @if (Model.Technicians.Count == 0)
+        {
+            <div class="col-12">
+                <div class="card card-modern p-5 text-center">
+                    <h5 class="fw-bold">No technicians match your filters</h5>
+                    <p class="text-muted small mb-0">Try lowering the minimum rating or widening the price range.</p>
+                </div>
+            </div>
+        }
+        @foreach (var t in Model.Technicians)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card card-modern card-accent-blue h-100 p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            @if (!string.IsNullOrEmpty(t.ProfilePictureUrl))
+                            {
+                                <img src="@t.ProfilePictureUrl" alt="@t.FullName" class="rounded-circle border object-fit-cover shadow-sm flex-shrink-0" style="width: 50px; height: 50px; border-color: #f5a623 !important; border-width: 2px !important;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold fs-5 d-flex align-items-center justify-content-center border border-primary-subtle flex-shrink-0" style="width: 50px; height: 50px;">@(t.FullName.Length > 0 ? t.FullName[0] : 'T')</div>
+                            }
+                            <div>
+                                <h6 class="fw-bold mb-0">@t.FullName</h6>
+                                @if (t.ReviewCount == 0)
+                                {
+                                    <span class="badge bg-light text-muted border fw-normal" style="font-size: .68rem;">New Pro</span>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Review" asp-action="Technician" asp-route-id="@t.Id" class="text-decoration-none small">
+                                        <partial name="_StarRating" model="t.Rating" />
+                                        <span class="fw-bold">@t.Rating.ToString("F1")</span>
+                                        <span class="text-muted">(@t.ReviewCount)</span>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                        @if (t.IsAvailable)
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: .72rem;">&bull; Available</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-muted rounded-pill" style="font-size: .72rem;">Busy</span>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        @foreach (var sp in t.Specialties)
+                        {
+                            <span class="badge rounded-pill bg-light text-muted border fw-medium" style="font-size: .75rem;"><i class="bi bi-tag-fill text-warning me-1" style="font-size: .65rem;"></i>@sp</span>
+                        }
+                    </div>
+
+                    <div class="small mb-3">
+                        <i class="bi bi-calendar-week text-primary me-1"></i>
+                        @if (t.WorkingDays.Count == 0)
+                        {
+                            <span class="text-muted">Working hours not published yet</span>
+                        }
+                        else
+                        {
+                            <span class="fw-semibold">@string.Join(", ", t.WorkingDays)</span>
+                            <span class="text-muted">&bull; @t.WorkingHours</span>
+                        }
+                    </div>
+
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center mt-auto">
+                        <div>
+                            <small class="text-muted d-block fw-bold" style="font-size: .68rem;">HOURLY RATE</small>
+                            <span class="fw-bold text-primary fs-5">@t.HourlyRate.ToString("N0") <span class="small text-muted" style="font-size: .8rem;">EGP/hr</span></span>
+                        </div>
+                        @if (t.IsAvailable && t.WorkingDays.Count > 0)
+                        {
+                            <a asp-action="Create" asp-route-technicianId="@t.Id" class="btn btn-yellow-modern btn-sm px-3"><i class="bi bi-calendar-plus me-1"></i>Book Now</a>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary btn-sm px-3" disabled>Not bookable</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

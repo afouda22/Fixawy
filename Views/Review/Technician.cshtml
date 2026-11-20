@@ -1,0 +1,74 @@
+@model TechnicianReviewsViewModel
+@{
+    ViewData["Title"] = "Reviews - " + Model.TechnicianName;
+    var written = Model.StarCounts.Sum();
+}
+<link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+
+<div class="py-3">
+    <a asp-controller="Booking" asp-action="Technicians" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Back to technicians</a>
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-4">
+            <div class="card card-modern p-4 text-center">
+                @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                {
+                    <img src="@Model.ProfilePictureUrl" alt="@Model.TechnicianName" class="rounded-circle object-fit-cover mx-auto mb-2" style="width: 84px; height: 84px; border: 3px solid #f5a623;" />
+                }
+                <h4 class="fw-bold mb-1">@Model.TechnicianName</h4>
+                <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                    @foreach (var sp in Model.Specialties) { <span class="badge rounded-pill bg-light text-muted border">@sp</span> }
+                </div>
+
+                @if (Model.ReviewCount == 0)
+                {
+                    <div class="text-muted">No ratings yet</div>
+                }
+                else
+                {
+                    <div class="display-5 fw-bold">@Model.AverageRating.ToString("F1")</div>
+                    <div class="fs-5"><partial name="_StarRating" model="Model.AverageRating" /></div>
+                    <div class="small text-muted">Based on @Model.ReviewCount rating(s)</div>
+                }
+
+                @if (written > 0)
+                {
+                    <div class="text-start mt-3">
+                        @for (var star = 5; star >= 1; star--)
+                        {
+                            var pct = (int)Math.Round(Model.StarCounts[star] * 100.0 / written);
+                            <div class="d-flex align-items-center gap-2 small mb-1">
+                                <span style="width: 2rem;">@star <i class="bi bi-star-fill text-warning"></i></span>
+                                <div class="rating-bar flex-fill"><span style="width: @(pct)%;"></span></div>
+                                <span class="text-muted" style="width: 2rem; text-align: right;">@Model.StarCounts[star]</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (Model.IsAvailable)
+                {
+                    <a asp-controller="Booking" asp-action="Create" asp-route-technicianId="@Model.TechnicianId" class="btn btn-yellow-modern mt-4"><i class="bi bi-calendar-plus me-1"></i>Book @Model.HourlyRate.ToString("N0") EGP/hr</a>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <h5 class="fw-bold mb-3">Customer reviews</h5>
+            @if (Model.Reviews.Count == 0)
+            {
+                <div class="card card-modern p-4 text-muted">No written reviews yet.</div>
+            }
+            @foreach (var r in Model.Reviews)
+            {
+                <div class="card card-modern p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><span class="fw-bold">@r.CustomerName</span> <partial name="_StarRating" model="(double)r.Rating" /></div>
+                        <span class="small text-muted">@r.CreatedAt.ToString("dd MMM yyyy")</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(r.Comment)) { <p class="mb-0 mt-2">@r.Comment</p> }
+                </div>
+            }
+        </div>
+    </div>
+</div>
