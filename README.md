@@ -26,9 +26,9 @@
 | # | Team Member | Primary Role & Core Module | Key Responsibilities & Delivered Components |
 |---|---|---|---|
 | **1** | **Abdelrahman Mohamed Galal** | **Identity, Security & Technician Directory** | • ASP.NET Core Identity & Role-Based Access Control (RBAC)<br>• Account Registration, Login, and Password Management<br>• Email OTP Verification via custom `IEmailService`<br>• Technician Profiles, Hourly Rates, Specialties & Weekly Schedules<br>• Administrator User Management Dashboard (`/Admin/Users`) |
-| **2** | **Bassel Amr Mahmoud** | **B2C Booking Engine & Customer Review System** | • Residential Technician Catalog & Filter Portal (`/Booking/Technicians`)<br>• Real-time Technician Availability & Slot Booking Engine<br>• Customer Self-Service Portal (`/Booking/MyBookings`)<br>• Technician Job Board & Schedule Tracker (`/Booking/TechnicianBookings`)<br>• Transparent Star-Rating & Review Engine (`/Review/Technician/{id}`) |
+| **2** | **Abdelrahman Ahmed Fouad** | **B2C Booking Engine & Customer Review System** | • Residential Technician Catalog & Filter Portal (`/Booking/Technicians`)<br>• Real-time Technician Availability & Slot Booking Engine<br>• Customer Self-Service Portal (`/Booking/MyBookings`)<br>• Technician Job Board & Schedule Tracker (`/Booking/TechnicianBookings`)<br>• Transparent Star-Rating & Review Engine (`/Review/Technician/{id}`) |
 | **3** | **Mohamed Rashed Ramah** | **B2B Facility Maintenance & Smart Prioritization** | • Organization Maintenance Request Workflow (`/Maintenance`)<br>• Facility Hierarchy: Departments & Physical Locations<br>• Multi-Factor Smart Urgency Prioritization Algorithm (`PriorityCalculator`)<br>• Secure Attachment Management (`IAttachmentService`) with MIME validation<br>• Advanced Search, Multi-Filter, Sorting & Pagination System |
-| **4** | **Abdelrahman Ahmed Fouad** | **Operations Dispatcher, SignalR Hub, Analytics & Cloud Architecture** | • Central Facility Dispatcher Operations Board (`/Dispatcher`)<br>• Smart Technician Matching & Auto-Assignment Algorithm<br>• Real-Time WebSockets Push Notification Hub (`/hubs/notifications`)<br>• Executive Analytics Engine & Chart.js Metrics (`/api/analytics`)<br>• Branded PDF Report Generation (QuestPDF) & CSV Data Export<br>• Cloud Hosting on MonsterASP & GitHub Actions CI/CD Pipeline |
+| **4** | **Bassel Amr Mahmoud** | **Operations Dispatcher, SignalR Hub, Analytics & Cloud Architecture** | • Central Facility Dispatcher Operations Board (`/Dispatcher`)<br>• Smart Technician Matching & Auto-Assignment Algorithm<br>• Real-Time WebSockets Push Notification Hub (`/hubs/notifications`)<br>• Executive Analytics Engine & Chart.js Metrics (`/api/analytics`)<br>• Branded PDF Report Generation (QuestPDF) & CSV Data Export<br>• Cloud Hosting on MonsterASP & GitHub Actions CI/CD Pipeline |
 
 ---
 
@@ -40,7 +40,7 @@
 * **Technician Directory & Profile Portal (`TechnicianController`):** Designed the technician showcase directory (`/Technician/Directory`), presenting technicians' bios, verified specialties, hourly rates, experience years, and daily working hours (`TechnicianSchedule`).
 * **Super-Admin User Management (`AdminController`):** Developed an administrative management console (`/Admin/Users`) enabling administrators to view system users, toggle account statuses (active/inactive), and manage role assignments.
 
-#### 🔹 Teammate 2: Bassel Amr Mahmoud
+#### 🔹 Teammate 2: Abdelrahman Ahmed Fouad
 * **B2C Technician Booking Engine (`BookingController`, `BookingService`):** Created the full customer-facing booking journey where residential customers browse technicians by trade, view available calendar dates, specify needed repair services (`BookingItem`), and submit service appointments.
 * **Dynamic Availability & Conflict Prevention:** Engineered logic to inspect existing technician schedules and active bookings, preventing double-booking of technician time slots.
 * **Dual Booking Management Portals:**
@@ -59,7 +59,7 @@
   * *Classification Thresholds:* **Low** (<30) | **Medium** (30–59) | **High** (60–84) | **Critical** (≥85).
 * **Secure Attachment Vault (`AttachmentService`):** Built file upload pipelines supporting photos and diagnostic documents (`.jpg`, `.jpeg`, `.png`, `.pdf`, `.doc`, `.docx`) up to 10 MB, stored securely outside the public web root (`App_Data/Attachments`) with strict authorization checks to prevent unauthorized data access.
 
-#### 🔹 Teammate 4: Abdelrahman Ahmed Fouad
+#### 🔹 Teammate 4: Bassel Amr Mahmoud
 * **Operations Dispatcher Board (`DispatcherController`, `Views/Dispatcher/Index.cshtml`):** Engineered the single-pane command center for Facility Admins and Super Admins, displaying real-time ticket queues categorized into Pending, Assigned, and In-Progress.
 * **Intelligent Technician Matching & Auto-Assignment (`TechnicianAssignmentService`):** Formulated an automated candidate-ranking algorithm:
   * **Specialty Match (40 pts):** Exact match with the required skill vs. cross-disciplinary alternative.
