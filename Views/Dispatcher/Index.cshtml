@@ -493,6 +493,15 @@
                 const tickets = await res.json();
                 if (!Array.isArray(tickets)) {
                     console.error("Expected array but got:", tickets);
+                    if (list) {
+                        list.innerHTML = `
+                            <div class="p-4 text-center text-secondary border rounded-3 bg-light">
+                                <i class="bi bi-exclamation-circle text-warning fs-3 d-block mb-2"></i>
+                                <h6 class="fw-bold mb-1">Could not parse pending tickets</h6>
+                                <p class="small text-secondary mb-2">Unexpected data received from server</p>
+                            </div>
+                        `;
+                    }
                     return;
                 }
 
@@ -624,21 +633,29 @@
                     return;
                 }
                 const techs = await res.json();
-                if (!Array.isArray(techs)) return;
+                if (!Array.isArray(techs)) {
+                    if (list) list.innerHTML = `<div class="text-center py-4 text-warning small">Could not parse technicians roster</div>`;
+                    return;
+                }
+
+                if (techs.length === 0) {
+                    if (list) list.innerHTML = `<div class="text-center py-4 text-secondary small">No technicians registered for this facility.</div>`;
+                    return;
+                }
 
                 if (list) {
                     list.innerHTML = techs.map(t => `
                         <div data-tech-id="${t.technicianId}"
-                             data-tech-name="${t.fullName.replace(/'/g, "\\'")}"
+                             data-tech-name="${(t.fullName || '').replace(/'/g, "\\'")}"
                              data-tech-specs="${(t.specialization || '').replace(/'/g, "\\'")}"
                              ondragover="handleDragOver(event, this)" 
                              ondragleave="handleDragLeave(this)" 
-                             ondrop="handleDrop(event, ${t.technicianId}, '${t.fullName.replace(/'/g, "\\'")}', '${(t.specialization || '').replace(/'/g, "\\'")}')" 
+                             ondrop="handleDrop(event, ${t.technicianId}, '${(t.fullName || '').replace(/'/g, "\\'")}', '${(t.specialization || '').replace(/'/g, "\\'")}')" 
                              class="p-2.5 rounded-3 border d-flex justify-content-between align-items-center transition-all bg-body tech-drop-target" 
                              style="transition: all 0.2s ease;">
                             <div>
-                                <div class="fw-bold small text-truncate" style="max-width: 200px;">${t.fullName}</div>
-                                <div class="text-secondary" style="font-size: 0.72rem;">${t.specialization} &bull; <span class="text-warning">★ ${t.rating.toFixed(1)}</span></div>
+                                <div class="fw-bold small text-truncate" style="max-width: 200px;">${t.fullName || 'Technician'}</div>
+                                <div class="text-secondary" style="font-size: 0.72rem;">${t.specialization || 'General'} &bull; <span class="text-warning">★ ${(t.rating != null ? Number(t.rating).toFixed(1) : '5.0')}</span></div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge ${t.activeTickets > 0 ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success'} rounded-pill" style="font-size: 0.7rem;">
@@ -796,10 +813,6 @@
             } catch (err) {
                 console.error("Manual assign error:", err);
                 showToast("System Error", "Failed to connect to server.", "danger");
-            }
-        }
-            } catch (err) {
-                console.error("Manual assign error:", err);
             }
         }
 
